@@ -20,7 +20,7 @@ if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
 	echo "It looks like DNSCrypt is already installed. Quitting."
 	exit
 else
-	apt-get install automake libtool
+	apt-get install automake libtool build-essential
 	cd
 	mkdir dnscrypt-autoinstall
 	cd dnscrypt-autoinstall
@@ -32,6 +32,7 @@ else
 	make
 	make check
 	make install
+	ldconfig
 	cd ..
 	tar -zxf dnscrypt-proxy-1.3.3.tar.gz
 	cd dnscrypt-proxy-1.3.3
