@@ -24,8 +24,8 @@ else
 	cd
 	mkdir dnscrypt-autoinstall
 	cd dnscrypt-autoinstall
-	wget -no-check-certificate https://download.libsodium.org/libsodium/releases/libsodium-0.4.3.tar.gz
-	wget -no-check-certificate http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-1.3.3.tar.gz
+	wget --no-check-certificate https://download.libsodium.org/libsodium/releases/libsodium-0.4.3.tar.gz
+	wget http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-1.3.3.tar.gz
 	tar -zxf libsodium-0.4.3.tar.gz
 	cd libsodium-0.4.3
 	./configure
@@ -40,7 +40,7 @@ else
 	make install
 	cd ..
 	useradd -g dnscrypt -d /dev/null -s /dev/nologin dnscrypt
-	wget --no-check-certficate https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/initscript.sh -o /etc/init.d/dnscrypt-proxy
+	wget --no-check-certificate https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/initscript.sh -o /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
 	update-rc.d dnscrypt-proxy defaults
 	/etc/init.d/dnscrypt-proxy start
