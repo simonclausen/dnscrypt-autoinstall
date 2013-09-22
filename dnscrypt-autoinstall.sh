@@ -7,8 +7,8 @@
 #
 # This script needs a lot of work done - this is just a first draft I quickly cooked up.
 #
-# Todo: proper init script, choice of dnscrypt service (OpenDNS, CloudNS, DNSCrypt.eu, "other"),
-#		reconfigure after installed, uninstall feature, download newest version, checksum files, etc.
+# Todo: proper init script, choice of dnscrypt service (OpenDNS, DNSCrypt.eu, "other", etc),
+#       reconfigure after installed, uninstall feature, download newest version, check for existing DNS service, etc.
 ###
 
 if [ $USER != 'root' ]; then
