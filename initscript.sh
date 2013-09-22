@@ -9,7 +9,7 @@
 # Description:       dnscrypt-proxy secure DNS client
 ### END INIT INFO
 
-# Author: Simon Clausen <kontakt@simonclausen.dk>
+# Author: Simon Clausen <kontakt@simonclausen.dk> 
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
