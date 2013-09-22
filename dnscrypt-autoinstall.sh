@@ -45,7 +45,7 @@ else
 	update-rc.d dnscrypt-proxy defaults
 	/etc/init.d/dnscrypt-proxy start
 	sed s/nameserver/#nameserver/ </etc/resolv.conf
-	cat "nameserver 127.0.0.1" >> /etc/resolv.conf
+	echo "nameserver 127.0.0.1" >> /etc/resolv.conf
 	cd
 	rm -rf dnscrypt-autoinstall
 fi
