@@ -40,7 +40,7 @@ else
 	make install
 	cd ..
 	useradd -g dnscrypt -d /dev/null -s /dev/nologin dnscrypt
-	wget --no-check-certficate https://INITSCRIPT
+	wget --no-check-certficate https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/initscript.sh -o /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
 	update-rc.d dnscrypt-proxy defaults
 	/etc/init.d/dnscrypt-proxy start
