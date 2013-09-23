@@ -14,14 +14,11 @@
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
 NAME=dnscrypt-proxy
-ADDRESS=208.67.220.220
-PNAME=2.dnscrypt-cert.dnscrypt.org
-PKEY=B735:1140:206F:225D:3E2B:D822:D7FD:691E:A1C3:3CC8:D666:8D0C:BE04:BFAB:CA43:FB79
 
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
+    $DAEMON --daemonize --user=dnscrypt
     ;;
   stop)
     echo "Stopping $NAME"
