@@ -12,6 +12,8 @@ This script should work on new(er) debian'ish releases.
 
 Todo: proper init script, download newest version, handle failed download, fix quirks
 
+Check out https://simonclausen.dk/tag/dnscrypt/ for more info.
+
 ## Installation
 `wget --no-check-certificate https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall.sh`
 `chmod +x dnscrypt-autoinstall.sh`
