@@ -36,7 +36,7 @@ function config_interface {
 	echo ""
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
-	echo "1) DNSCrypt.eu (Holland - no logs, DNSSEC)"
+	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
 	echo "2) OpenDNS (Anycast)"
 	echo "3) CloudNS (Austrailia - no logs, DNSSEC)"
 	echo "4) OpenNIC (Japan - no logs)"
