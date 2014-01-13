@@ -10,7 +10,7 @@
 # This script should work on new(er) debian'ish releases.
 #
 # Author: Simon Clausen <kontakt@simonclausen.dk>
-# Version: 0.2
+# Version: 0.3
 #
 # Todo: proper init script, download newest version, handle failed download, fix quirks
 #
@@ -36,12 +36,14 @@ function config_interface {
 	echo ""
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
-	echo "1) DNSCrypt.eu (Holland - no logs)"
+	echo "1) DNSCrypt.eu (Holland - no logs, DNSSEC)"
 	echo "2) OpenDNS (Anycast)"
-	echo "3) CloudNS (Austrailia - no logs)"
+	echo "3) CloudNS (Austrailia - no logs, DNSSEC)"
 	echo "4) OpenNIC (Japan - no logs)"
+	echo "5) OpenNIC (Europe - no logs)"
+	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
 	echo ""
-	read -p "Select an option [1-4]: " OPTION
+	read -p "Select an option [1-6]: " OPTION
 	case $OPTION in
 		1)
 		WHICHRESOLVER=dnscrypteu
@@ -53,14 +55,20 @@ function config_interface {
 		WHICHRESOLVER=cloudns
 		;;
 		4)
-		WHICHRESOLVER=opennic
+		WHICHRESOLVER=opennicjp
+		;;
+		5)
+		WHICHRESOLVER=openniceu
+		;;
+		6)
+		WHICHRESOLVER=soltysiak
 		;;
 	esac
 	return 0
 }
 
 function config_do {
-	wget --no-check-certificate https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
+	wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
 	if [ $DNSCRYPTCONF == true ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
@@ -165,7 +173,7 @@ else
 		
 		# Install prereqs and make a working dir
 		apt-get update
-		apt-get install -y automake libtool build-essential
+		apt-get install -y automake libtool build-essential ca-certificates
 		cd
 		mkdir dnscrypt-autoinstall
 		cd dnscrypt-autoinstall
@@ -173,7 +181,7 @@ else
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
-			wget --no-check-certificate https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
+			wget https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -204,6 +212,7 @@ else
 		# Set up resolv.conf to use dnscrypt
 		mv /etc/resolv.conf /etc/resolv.conf-dnscryptbak
 		echo "nameserver 127.0.0.1" > /etc/resolv.conf
+		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
 		
 		# Clean up
 		cd

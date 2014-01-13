@@ -14,18 +14,14 @@
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
 NAME=dnscrypt-proxy
-ADDRESS1=77.66.84.233
-ADDRESS2=176.56.237.171
-PNAME1=2.dnscrypt-cert.resolver2.dnscrypt.eu
-PNAME2=2.dnscrypt-cert.resolver1.dnscrypt.eu
-PKEY1=3748:5585:E3B9:D088:FD25:AD36:B037:01F5:520C:D648:9E9A:DD52:1457:4955:9F0A:9955
-PKEY2=67C0:0F2C:21C5:5481:45DD:7CB4:6A27:1AF2:EB96:9931:40A3:09B6:2B8D:1653:1185:9C66
+ADDRESS=178.216.201.222:2053
+PNAME=2.dnscrypt-cert.soltysiak.com
+PKEY=25C4:E188:2915:4697:8F9C:2BBD:B6A7:AFA4:01ED:A051:0508:5D53:03E7:1928:C066:8F21 
 
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --user=dnscrypt --listen-address=127.0.0.1 --resolver-address=$ADDRESS1 --provider-name=$PNAME1 --provider-key=$PKEY1
-	$DAEMON --daemonize --user=dnscrypt --listen-address=127.0.0.2 --resolver-address=$ADDRESS2 --provider-name=$PNAME2 --provider-key=$PKEY2
+    $DAEMON --daemonize --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
     ;;
   stop)
     echo "Stopping $NAME"
