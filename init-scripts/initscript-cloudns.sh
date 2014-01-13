@@ -24,8 +24,8 @@ PKEY2=67A4:323E:581F:79B9:BC54:825F:54FE:1025:8B4F:37EB:0D07:0BCE:4010:6195:D94F
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --user=dnscrypt --listen-address=127.0.0.1 --resolver-address=$ADDRESS1 --provider-name=$PNAME1 --provider-key=$PKEY1
-	$DAEMON --daemonize --user=dnscrypt --listen-address=127.0.0.2 --resolver-address=$ADDRESS2 --provider-name=$PNAME2 --provider-key=$PKEY2
+    $DAEMON --daemonize --user=dnscrypt --local-address=127.0.0.1 --resolver-address=$ADDRESS1 --provider-name=$PNAME1 --provider-key=$PKEY1
+	$DAEMON --daemonize --user=dnscrypt --local-address=127.0.0.2 --resolver-address=$ADDRESS2 --provider-name=$PNAME2 --provider-key=$PKEY2
     ;;
   stop)
     echo "Stopping $NAME"
