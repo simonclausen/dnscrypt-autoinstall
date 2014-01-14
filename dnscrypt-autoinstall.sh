@@ -28,7 +28,7 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=0.4.3
+LSODIUMVER=0.4.5
 DNSCRYPTVER=1.3.3
 WHICHRESOLVER=dnscrypteu
 
@@ -203,8 +203,8 @@ else
 		
 		# Add dnscrypt user and homedir
 		mkdir -p /var/run/dnscrypt
-		useradd -d /var/run/dnscrypt -s /dev/nologin dnscrypt
-		chown dnscrypt:dnscrypt /var/run/dnscrypt
+		useradd -d /var/run/dnscrypt --system dnscrypt
+		chown dnscrypt /var/run/dnscrypt
 		
 		# Set up init script
 		config_do
