@@ -17,11 +17,11 @@
 ###
 
 # Are you root?
-if [ $USER != 'root' ]; then
+if [ $(id -u) != 0 ]; then
 	echo "Error!"
 	echo ""
 	echo "You need to be root to run this script."
-	exit
+	exit 1
 fi
 
 # Vars for stuff
@@ -141,7 +141,7 @@ if [ $DNSCRYPTINST == true ]; then
 		echo "from the system and run this script again."
 		echo ""
 		echo "Quitting."
-		exit
+		exit 1
 	fi
 else
 	if nc -z -w1 127.0.0.1 53; then
@@ -155,7 +155,7 @@ else
 		echo "or make it listen on another IP than 127.0.0.1."
 		echo ""
 		echo "Quitting."
-		exit
+		exit 1
 	else
 		echo ""
 		echo "Welcome to dnscrypt-autoinstall script."
