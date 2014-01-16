@@ -17,7 +17,7 @@
 ###
 
 # Are you root?
-if [ $USER != 'root' ]; then
+if [ $(id -u) != 0 ]; then
 	echo "Error!"
 	echo ""
 	echo "You need to be root to run this script."
