@@ -68,7 +68,7 @@ function config_interface {
 }
 
 function config_do {
-	wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
+	curl -o initscript-$WHICHRESOLVER.sh https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
 	if [ $DNSCRYPTCONF == true ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
@@ -173,7 +173,7 @@ else
 		
 		# Install prereqs and make a working dir
 		apt-get update
-		apt-get install -y automake libtool build-essential ca-certificates
+		apt-get install -y automake libtool build-essential ca-certificates curl
 		cd
 		mkdir dnscrypt-autoinstall
 		cd dnscrypt-autoinstall
@@ -181,7 +181,7 @@ else
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
-			wget https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -193,7 +193,7 @@ else
 		fi
 		
 		# Continue with dnscrypt installation 
-		wget http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		cd dnscrypt-proxy-$DNSCRYPTVER
 		./configure
