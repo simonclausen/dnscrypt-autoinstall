@@ -203,6 +203,7 @@ else
 		
 		# Add dnscrypt user and homedir
 		mkdir -p /var/run/dnscrypt
+		adduser --system --home /run/dnscrypt --shell /bin/false --group --disabled-password --disabled-login dnscrypt
 		useradd -d /var/run/dnscrypt --system dnscrypt
 		chown dnscrypt /var/run/dnscrypt
 		
