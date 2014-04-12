@@ -120,7 +120,7 @@ if [ $DNSCRYPTINST == true ]; then
 			rm /etc/init.d/dnscrypt-proxy
 			rm /usr/local/sbin/dnscrypt-proxy
 			deluser dnscrypt
-			rm -rf /var/run/dnscrypt
+			rm -rf /etc/dnscrypt
 			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
 			echo "DNSCrypt has been removed. Quitting."
 			exit
@@ -202,9 +202,7 @@ else
 		cd ..
 		
 		# Add dnscrypt user and homedir
-		mkdir -p /var/run/dnscrypt
-		useradd -d /var/run/dnscrypt --system dnscrypt
-		chown dnscrypt /var/run/dnscrypt
+		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group --disabled-password --disabled-login dnscrypt
 		
 		# Set up init script
 		config_do
