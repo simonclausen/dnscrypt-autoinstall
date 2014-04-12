@@ -120,7 +120,7 @@ if [ $DNSCRYPTINST == true ]; then
 			rm /etc/init.d/dnscrypt-proxy
 			rm /usr/local/sbin/dnscrypt-proxy
 			deluser dnscrypt
-			rm -rf /etc/dnscrypt/run
+			rm -rf /etc/dnscrypt
 			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
 			echo "DNSCrypt has been removed. Quitting."
 			exit
