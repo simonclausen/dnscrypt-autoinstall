@@ -38,7 +38,7 @@ function config_interface {
 	echo ""
 	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
 	echo "2) OpenDNS (Anycast)"
-	echo "3) CloudNS (Austrailia - no logs, DNSSEC)"
+	echo "3) CloudNS (Australia - no logs, DNSSEC)"
 	echo "4) OpenNIC (Japan - no logs)"
 	echo "5) OpenNIC (Europe - no logs)"
 	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
