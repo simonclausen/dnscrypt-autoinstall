@@ -81,6 +81,25 @@ function config_do {
 	return 0
 }
 
+function import_gpgkey {
+	echo "Importing key with ID: $1"
+	gpg --keyserver keys.gnupg.net --recv-key $1
+	if [ $? -ne 0 ]; then
+        	echo "Error importing key $1" 
+		exit 1
+        fi
+}
+
+function verify_sig {
+	echo "Verifying signature of: $2"
+	gpg --verify $1 $2
+
+	if [ $? -ne 0 ]; then
+		echo "Error verifying signature"
+		exit 1
+	fi
+}
+
 if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
 	DNSCRYPTINST=true
 fi
@@ -178,10 +197,18 @@ else
 		mkdir dnscrypt-autoinstall
 		cd dnscrypt-autoinstall
 		
+		# Import GPG key to verify files
+		import_gpgkey 1CDEA439
+		
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
 			curl -o libsodium-$LSODIUMVER.tar.gz https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz.sig https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz.sig
+			
+			# Verify signature
+			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
+			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -194,6 +221,11 @@ else
 		
 		# Continue with dnscrypt installation 
 		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		
+		# Verify signature
+		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		cd dnscrypt-proxy-$DNSCRYPTVER
 		./configure
