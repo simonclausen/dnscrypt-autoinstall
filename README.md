@@ -1,7 +1,7 @@
 dnscrypt-autoinstall
 ====================
 
-## Decription
+## Description
 Installation and autoconfigure script for debian'ish systems and dnscrypt.
 
 This script will install pre-req's, make & install dnscrypt and finally set it up
