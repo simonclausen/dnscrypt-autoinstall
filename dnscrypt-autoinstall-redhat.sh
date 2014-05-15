@@ -247,8 +247,7 @@ else
 		cd ..
 		
 		# Add dnscrypt user and homedir
-		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
-			--disabled-password --disabled-login dnscrypt
+		useradd --system -d -m /etc/dnscrypt/run -s /bin/false dnscrypt
 		
 		# Set up init script
 		config_do
