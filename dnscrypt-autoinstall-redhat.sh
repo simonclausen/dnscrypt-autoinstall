@@ -208,25 +208,25 @@ else
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
 			if [[ yum install -y libsodium-devel ]]; then
-			  :
+				:
 			else
-			  curl -o libsodium-$LSODIUMVER.tar.gz https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
-			  curl -o libsodium-$LSODIUMVER.tar.gz.sig https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz.sig
+				curl -o libsodium-$LSODIUMVER.tar.gz https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
+				curl -o libsodium-$LSODIUMVER.tar.gz.sig https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz.sig
 			
-			  # Verify signature
-			  verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
+				# Verify signature
+				verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
 			
-			  tar -zxf libsodium-$LSODIUMVER.tar.gz
-			  cd libsodium-$LSODIUMVER
-			  ./configure
-			  make
-			  make check
-			  make install
+				tar -zxf libsodium-$LSODIUMVER.tar.gz
+				cd libsodium-$LSODIUMVER
+				./configure
+				make
+				make check
+				make install
 			  
-			  # Fedora does not include /usr/local/lib when linking
-			  echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
-			  ldconfig
-			  cd ..
+				# Fedora does not include /usr/local/lib when linking
+				echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
+				ldconfig
+				cd ..
 			fi
 		fi
 		
