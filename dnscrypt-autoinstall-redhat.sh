@@ -75,12 +75,12 @@ function config_do {
 	curl -Lo initscript-$WHICHRESOLVER.sh https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
 	if [ $DNSCRYPTCONF == true ]; then
 		/etc/init.d/dnscrypt-proxy stop
-		update-rc.d -f dnscrypt-proxy remove
+		chkconfig --del dnscrypt-proxy
 		rm -f /etc/init.d/dnscrypt-proxy
 	fi
 	mv initscript-$WHICHRESOLVER.sh /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
-	update-rc.d dnscrypt-proxy defaults
+	chkconfig --add dnscrypt-proxy
 	/etc/init.d/dnscrypt-proxy start
 	return 0
 }
@@ -139,7 +139,7 @@ if [ $DNSCRYPTINST == true ]; then
 			;;
 			2)
 			/etc/init.d/dnscrypt-proxy stop
-			update-rc.d -f dnscrypt-proxy remove
+			chkconfig --del dnscrypt-proxy
 			rm -f /etc/init.d/dnscrypt-proxy
 			rm -f /usr/local/sbin/dnscrypt-proxy
 			deluser dnscrypt
@@ -197,7 +197,6 @@ else
 		# Install prereqs and make a working dir
 		yum update
 		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-
 		mkdir ~/dnscrypt-autoinstall
 		cd ~/dnscrypt-autoinstall
 		
@@ -209,7 +208,6 @@ else
 		
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
-		
 			# Nope? Then let's get it set up
 			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
 			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
