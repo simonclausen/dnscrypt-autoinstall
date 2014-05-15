@@ -198,7 +198,7 @@ else
 		
 		# Install prereqs and make a working dir
 		yum update
-		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
+		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
 		cd
 		mkdir dnscrypt-autoinstall
 		cd dnscrypt-autoinstall
