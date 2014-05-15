@@ -197,37 +197,37 @@ else
 		# Install prereqs and make a working dir
 		yum update
 		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-		cd
-		mkdir dnscrypt-autoinstall
-		cd dnscrypt-autoinstall
+
+		mkdir ~/dnscrypt-autoinstall
+		cd ~/dnscrypt-autoinstall
+		
+		# Fedora 19/20 include libsodium
+		yum install -y libsodium-devel
 		
 		# Import GPG key to verify files
 		import_gpgkey 1CDEA439
 		
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
+		
 			# Nope? Then let's get it set up
-			if yum install -y libsodium-devel; then
-				:
-			else
-				curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-				curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
+			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
 			
-				# Verify signature
-				verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
+			# Verify signature
+			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
 			
-				tar -zxf libsodium-$LSODIUMVER.tar.gz
-				cd libsodium-$LSODIUMVER
-				./configure
-				make
-				make check
-				make install
+			tar -zxf libsodium-$LSODIUMVER.tar.gz
+			cd libsodium-$LSODIUMVER
+			./configure
+			make
+			make check
+			make install
 			  
-				# Fedora does not include /usr/local/lib when linking
-				echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
-				ldconfig
-				cd ..
-			fi
+			# Fedora does not include /usr/local/lib for linking
+			echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
+			ldconfig
+			cd ..
 		fi
 		
 		# Continue with dnscrypt installation 
