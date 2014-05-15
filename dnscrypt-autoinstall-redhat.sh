@@ -2,7 +2,7 @@
 
 ### 
 # Installation and autoconfigure script for Red Hat-based systems (Fedora, CentOS, 
-# Scientific Linux and dnscrypt).
+# Scientific Linux) and dnscrypt.
 #
 # This script will install pre-req's, make & install dnscrypt and finally set it up
 # as a daemon service that runs on system startup. It also gives you the option to
