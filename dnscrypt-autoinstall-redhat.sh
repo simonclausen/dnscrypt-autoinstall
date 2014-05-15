@@ -110,7 +110,7 @@ fi
 
 if [ -e /usr/local/lib/libsodium.so ]; then
 	LSODIUMINST=true
-elif [[ rpm -q libsodium-devel ]]; then
+elif [[ "rpm -q libsodium-devel" ]]; then
 	LSODIUMINST=true
 fi
 
@@ -209,7 +209,7 @@ else
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
-			if [[ yum install -y libsodium-devel ]]; then
+			if [[ "yum install -y libsodium-devel" ]]; then
 				:
 			else
 				curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
