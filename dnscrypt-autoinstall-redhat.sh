@@ -32,6 +32,8 @@ DNSCRYPTINST=false
 DNSCRYPTCONF=false
 LSODIUMVER=0.4.5
 DNSCRYPTVER=1.4.0
+LSODIUMURL="https://download.libsodium.org/libsodium/releases"
+DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
 WHICHRESOLVER=dnscrypteu
 
 function config_interface {
@@ -210,8 +212,8 @@ else
 			if [[ yum install -y libsodium-devel ]]; then
 				:
 			else
-				curl -o libsodium-$LSODIUMVER.tar.gz https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
-				curl -o libsodium-$LSODIUMVER.tar.gz.sig https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz.sig
+				curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+				curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
 			
 				# Verify signature
 				verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
@@ -231,8 +233,8 @@ else
 		fi
 		
 		# Continue with dnscrypt installation 
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
@@ -245,7 +247,8 @@ else
 		cd ..
 		
 		# Add dnscrypt user and homedir
-		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group --disabled-password --disabled-login dnscrypt
+		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
+			--disabled-password --disabled-login dnscrypt
 		
 		# Set up init script
 		config_do
