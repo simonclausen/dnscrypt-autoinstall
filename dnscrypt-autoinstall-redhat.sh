@@ -15,7 +15,6 @@
 # # Proper init script, download newest version, handle failed download, fix quirks
 # # Configure Network Manager with nmcli
 # # Install systemd service if supported
-#
 ###
 
 # Are you root?
@@ -220,11 +219,11 @@ else
 			make
 			make check
 			make install
+			cd ..
 			  
 			# Fedora does not include /usr/local/lib for linking
 			echo /usr/local/lib > /etc/ld.so.conf.d/usr_local_lib.conf
 			ldconfig
-			cd ..
 		fi
 		
 		# Continue with dnscrypt installation 
@@ -254,7 +253,6 @@ else
 		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
 		
 		# Clean up
-		cd
-		rm -rf dnscrypt-autoinstall
+		rm -rf ~/dnscrypt-autoinstall
 	fi
 fi
