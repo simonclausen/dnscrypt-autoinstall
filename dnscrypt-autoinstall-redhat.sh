@@ -109,7 +109,7 @@ fi
 if [ -e /usr/local/lib/libsodium.so ]; then
 	LSODIUMINST=true
 elif [[ rpm -q libsodium-devel ]]; then
-  LSODIUMINST=true
+	LSODIUMINST=true
 fi
 
 if [ -e /etc/init.d/dnscrypt-proxy ]; then
