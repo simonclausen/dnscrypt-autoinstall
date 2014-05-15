@@ -107,7 +107,7 @@ if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
 	DNSCRYPTINST=true
 fi
 
-if [ -e /usr/local/lib/libsodium.so ] || rpm -q libsodium-devel; then
+if [ -e /usr/local/lib/libsodium.so ]; then
 	LSODIUMINST=true
 fi
 
@@ -199,7 +199,7 @@ else
 		cd ~/dnscrypt-autoinstall
 		
 		# Fedora 19/20 include libsodium
-		yum install -y libsodium-devel
+		yum install -y libsodium-devel && LSODIUMINST=true
 		
 		# Import GPG key to verify files
 		import_gpgkey 1CDEA439
