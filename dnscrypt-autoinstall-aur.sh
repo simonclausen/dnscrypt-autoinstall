@@ -74,6 +74,13 @@ function config_do {
 	return 0
 }
 
+function remove {
+	systemctl disable dnscrypt-proxy.service
+	pacman -R dnscrypt-proxy libsodium
+	chattr -i /etc/resolv.conf
+	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+}
+
 # Checks package integrity, including /etc/conf.d/dnscrypt-proxy
 if pacman -Qk dnscrypt-proxy; then
 	DNSCRYPTINST=true
@@ -104,8 +111,7 @@ if [ $DNSCRYPTINST == true ] && [ LSODIUMINST=true ]; then
 		;;
 			
 		2)
-		systemctl disable dnscrypt-proxy.service
-		pacman -R dnscrypt-proxy libsodium
+		remove
 		exit
 		;;
 			
@@ -138,8 +144,7 @@ elif [ LSODIUMINST=true ]; then
 		;;
 			
 		2)
-		systemctl disable dnscrypt-proxy.service
-		pacman -R dnscrypt-proxy
+		remove
 		exit
 		;;
 			
@@ -196,6 +201,9 @@ else
 		mv /etc/resolv.conf /etc/resolv.conf-dnscryptbak
 		echo "nameserver 127.0.0.1" > /etc/resolv.conf
 		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
+		
+		# Dirty but dependable
+		chattr +i /etc/resolv.conf
 		
 		# Clean up
 		cd
