@@ -187,7 +187,7 @@ else
 		
 		# Arch uses the nobody user for dnscrypt
 		# mkdir -p /etc/dnscrypt/run
-    # useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
+ 		# useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
 		
 		# Set up configuration
 		config_do
