@@ -29,7 +29,9 @@ LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
 LSODIUMVER=0.4.5
-DNSCRYPTVER=1.3.3
+DNSCRYPTVER=1.4.0
+LSODIUMURL="https://download.libsodium.org/libsodium/releases"
+DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
 WHICHRESOLVER=dnscrypteu
 
 function config_interface {
@@ -38,7 +40,7 @@ function config_interface {
 	echo ""
 	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
 	echo "2) OpenDNS (Anycast)"
-	echo "3) CloudNS (Austrailia - no logs, DNSSEC)"
+	echo "3) CloudNS (Australia - no logs, DNSSEC)"
 	echo "4) OpenNIC (Japan - no logs)"
 	echo "5) OpenNIC (Europe - no logs)"
 	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
@@ -68,7 +70,7 @@ function config_interface {
 }
 
 function config_do {
-	wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
+	curl -Lo initscript-$WHICHRESOLVER.sh https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
 	if [ $DNSCRYPTCONF == true ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
@@ -79,6 +81,25 @@ function config_do {
 	update-rc.d dnscrypt-proxy defaults
 	/etc/init.d/dnscrypt-proxy start
 	return 0
+}
+
+function import_gpgkey {
+	echo "Importing key with ID: $1"
+	gpg --keyserver keys.gnupg.net --recv-key $1
+	if [ $? -ne 0 ]; then
+        	echo "Error importing key $1" 
+		exit 1
+        fi
+}
+
+function verify_sig {
+	echo "Verifying signature of: $2"
+	gpg --verify $1 $2
+
+	if [ $? -ne 0 ]; then
+		echo "Error verifying signature"
+		exit 1
+	fi
 }
 
 if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
@@ -120,7 +141,7 @@ if [ $DNSCRYPTINST == true ]; then
 			rm /etc/init.d/dnscrypt-proxy
 			rm /usr/local/sbin/dnscrypt-proxy
 			deluser dnscrypt
-			rm -rf /var/run/dnscrypt
+			rm -rf /etc/dnscrypt
 			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
 			echo "DNSCrypt has been removed. Quitting."
 			exit
@@ -173,15 +194,23 @@ else
 		
 		# Install prereqs and make a working dir
 		apt-get update
-		apt-get install -y automake libtool build-essential ca-certificates
+		apt-get install -y automake libtool build-essential ca-certificates curl
 		cd
 		mkdir dnscrypt-autoinstall
 		cd dnscrypt-autoinstall
 		
+		# Import GPG key to verify files
+		import_gpgkey 1CDEA439
+		
 		# Is libsodium installed?
 		if [ $LSODIUMINST == false ]; then
 			# Nope? Then let's get it set up
-			wget https://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
+			
+			# Verify signature
+			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
+			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -193,7 +222,12 @@ else
 		fi
 		
 		# Continue with dnscrypt installation 
-		wget http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		
+		# Verify signature
+		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		cd dnscrypt-proxy-$DNSCRYPTVER
 		./configure
@@ -202,9 +236,8 @@ else
 		cd ..
 		
 		# Add dnscrypt user and homedir
-		mkdir -p /var/run/dnscrypt
-		useradd -d /var/run/dnscrypt --system dnscrypt
-		chown dnscrypt /var/run/dnscrypt
+		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
+			--disabled-password --disabled-login dnscrypt
 		
 		# Set up init script
 		config_do
