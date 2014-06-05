@@ -142,6 +142,7 @@ if [ $DNSCRYPTINST == true ]; then
 			rm -f /etc/init.d/dnscrypt-proxy
 			rm -f /usr/local/sbin/dnscrypt-proxy
 			userdel -r dnscrypt
+			chattr -i /etc/resolv.conf
 			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
 			echo "DNSCrypt has been removed. Quitting."
 			exit
@@ -252,6 +253,9 @@ else
 		echo "nameserver 127.0.0.1" > /etc/resolv.conf
 		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
 		
+		# Dirty but dependable
+		chattr +i /etc/resolv.conf
+
 		# Clean up
 		rm -rf ~/dnscrypt-autoinstall
 	fi
