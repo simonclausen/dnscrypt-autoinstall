@@ -9,8 +9,6 @@
 #
 # Author: Simon Clausen <kontakt@simonclausen.dk>
 # Version: 0.3
-#
-# TODO: Check for dnscrypt-proxy-git (AUR), disowned packages, failed installs
 ###
 
 # Are you root?
@@ -98,62 +96,22 @@ if [ $DNSCRYPTINST == true ] && [ LSODIUMINST=true ]; then
 	echo "What would you like to do?"
 	echo ""
 	echo "1) Configure another DNSCrypt service"
-	echo "2) Uninstall DNSCrypt."
 	echo "3) Exit"
 	echo ""
 		
 	read -p "Select an option [1-3]: " OPTION
 	case $OPTION in
-	  1)
-		config_interface && config_do
-		echo "Reconfig done. Quitting."
-		exit
-		;;
-			
-		2)
-		remove
-		exit
-		;;
+		1)
+			config_interface && config_do
+			echo "Reconfig done. Quitting."
+			exit
+			;;
 			
 		3)
-		echo "Bye!"
-		exit
-		;;
+			echo "Bye!"
+			exit
+			;;
 	esac
-
-# pacman may ignore dependencies (--nodeps option)
-elif [ LSODIUMINST=true ]; then
-	echo ""
-	echo "Error!"
-	echo ""
-	echo "It seems like DNSCrypt was installed, but libsodium was not."
-	echo ""
-	echo "What would you like to do?"
-	echo ""
-	echo "1) Install libsodium"
-	echo "2) Uninstall DNSCrypt."
-	echo "3) Exit."
-	echo ""
-	
-	read -p "Select an option [1-3]: " OPTION
-	case $OPTION in
-	 1)
-		pacman -Syu libsodium
-		echo "Repair done. Quitting."
-		exit
-		;;
-			
-		2)
-		remove
-		exit
-		;;
-			
-		3)
-		echo "Bye!"
-		exit 1
-		;;
-	esac
-
 else
 	if nc -z -w1 127.0.0.1 53; then
 		echo ""
