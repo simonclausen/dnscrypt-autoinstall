@@ -1,34 +1,24 @@
-# This is an example PKGBUILD file. Use this as a start to creating your own,
-# and remove these comments. For more information, see 'man PKGBUILD'.
-# NOTE: Please fill out the license field for your package! If it is unknown,
-# then please put 'unknown'.
-
-# See http://wiki.archlinux.org/index.php/VCS_PKGBUILD_Guidelines
-# for more information on packaging from GIT sources.
-
-# Maintainer: Your Name <youremail@domain.com>
-pkgname=NAME-git
-pkgver=VERSION
+# Maintainer: Alad Wenter <the.changing.side@gmail.com>
+pkgname=dnscrypt-autoinstall-git
+pkgver=0.3
 pkgrel=1
-pkgdesc=""
-arch=()
-url=""
+pkgdesc="Automatic installation and configuration of DNSCrypt"
+arch=('i686' 'x86_64')
+url="https://github.com/simonclausen/dnscrypt-autoinstall"
 license=('GPL')
-groups=()
-depends=()
+groups=('network')
+depends=('libsodium' 'dnscrypt-proxy' 'gnu-netcat' 'curl')
 makedepends=('git')
-provides=()
-conflicts=()
-replaces=()
+provides=('dnscrypt-proxy')
 backup=()
 options=()
-install=
+install=dnscrypt-autoinstall.install
 source=()
 noextract=()
-md5sums=() #generate with 'makepkg -g'
+sha256sums=('SKIP')
 
-_gitroot=GITURL
-_gitname=MODENAME
+_gitroot='https://github.com/simonclausen/dnscrypt-autoinstall.git'
+_gitname=
 
 build() {
   cd "$srcdir"
@@ -47,13 +37,6 @@ build() {
   rm -rf "$srcdir/$_gitname-build"
   git clone "$srcdir/$_gitname" "$srcdir/$_gitname-build"
   cd "$srcdir/$_gitname-build"
-
-  #
-  # BUILD HERE
-  #
-  ./autogen.sh
-  ./configure --prefix=/usr
-  make
 }
 
 package() {
