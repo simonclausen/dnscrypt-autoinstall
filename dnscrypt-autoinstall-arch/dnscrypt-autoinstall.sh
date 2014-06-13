@@ -23,7 +23,7 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 WHICHRESOLVER=dnscrypteu
-GITURL=https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/conf.d
+GITURL=https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/systemd
 
 function config_interface {
 	echo ""
@@ -61,7 +61,7 @@ function config_interface {
 }
 
 function config_do {
-	curl -Lo dnscrypt-proxy-$WHICHRESOLVER $GITURL/dnscrypt-proxy-$WHICHRESOLVER
+	curl -Lo dnscrypt-proxy-$WHICHRESOLVER $GITURL/dnscrypt-config-$WHICHRESOLVER
 	if [ $DNSCRYPTINST == true ]; then
 		systemctl stop dnscrypt-proxy.service
 	fi
@@ -142,29 +142,8 @@ else
 			config_interface
 		fi
 		
-		# Prereqs
-		pacman -Syu curl gnu-netcat
-		
-		# Install and enable dnscrypt
-		pacman -Syu dnscrypt-proxy libsodium || exit 1
-		
-		# Arch uses the nobody user for dnscrypt
-		# mkdir -p /etc/dnscrypt/run
- 		# useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
-		
 		# Set up configuration
 		config_do
 		
-		# Set up resolv.conf to use dnscrypt
-		mv /etc/resolv.conf /etc/resolv.conf-dnscryptbak
-		echo "nameserver 127.0.0.1" > /etc/resolv.conf
-		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
-		
-		# Dirty but dependable
-		chattr +i /etc/resolv.conf
-		
-		# Clean up
-		cd
-		rm -rf dnscrypt-autoinstall
 	fi
 fi
