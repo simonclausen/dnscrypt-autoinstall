@@ -5,7 +5,6 @@ pkgdesc='Choose your DNSCrypt provider'
 arch=('i686' 'x86_64')
 url='http://simonclausen.dk/2013/09/dnscrypt-autoinstaller/'
 license=('GPL')
-provides=('dnscrypt-proxy')
 depends=('dnscrypt-proxy' 'libsodium' 'curl')
 makedepends=('git')
 install=dnscrypt-autoinstall.install
