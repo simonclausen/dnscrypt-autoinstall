@@ -65,8 +65,8 @@ function config_do {
 	return 0
 }
 
-echo -e "\nWelcome to dnscrypt-autoinstall script.\n"
-echo -e "This will automatically configure DNSCrypt.\n"
+echo -e "\nWelcome to dnscrypt-autoinstall.\n"
+echo -e "This will autoconfigure DNSCrypt to run as a daemon at start up.\n"
 read -n1 -r -p "Press any key to continue..."
 clear
 
