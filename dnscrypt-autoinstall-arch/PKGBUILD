@@ -1,46 +1,27 @@
-# Maintainer: Alad Wenter <the.changing.side@gmail.com>
-pkgname=dnscrypt-autoinstall-git
+pkgname=dnscrypt-autoinstall
 pkgver=0.3
 pkgrel=1
-pkgdesc="Automatic installation and configuration of DNSCrypt"
+pkgdesc='An improved dynamic tiling window manager'
 arch=('i686' 'x86_64')
-url="https://github.com/simonclausen/dnscrypt-autoinstall"
+url='http://simonclausen.dk/2013/09/dnscrypt-autoinstaller/'
 license=('GPL')
-groups=('network')
-depends=('libsodium' 'dnscrypt-proxy' 'gnu-netcat' 'curl')
-makedepends=('git')
 provides=('dnscrypt-proxy')
-backup=()
-options=()
-install=dnscrypt-autoinstall.install
-source=()
-noextract=()
-sha256sums=('SKIP')
+depends=('dnscrypt-proxy' 'libsodium' 'curl')
+makedepends=('git')
+install=('dnscrypt-autoinstall.install')
+source=('https://github.com/simonclausen/dnscrypt-autoinstall.git')
+sha1sums=('SKIP')
 
-_gitroot='https://github.com/simonclausen/dnscrypt-autoinstall.git'
-_gitname=
+_gitname='dnscrypt-autoinstall'
 
-build() {
-  cd "$srcdir"
-  msg "Connecting to GIT server...."
-
-  if [[ -d "$_gitname" ]]; then
-    cd "$_gitname" && git pull origin
-    msg "The local files are updated."
-  else
-    git clone "$_gitroot" "$_gitname"
-  fi
-
-  msg "GIT checkout done or server timeout"
-  msg "Starting build..."
-
-  rm -rf "$srcdir/$_gitname-build"
-  git clone "$srcdir/$_gitname" "$srcdir/$_gitname-build"
-  cd "$srcdir/$_gitname-build"
+pkgver() {
+  cd "$srcdir/$_gitname"
+  git describe --tags | sed 's/-/./g'
 }
 
 package() {
-  cd "$srcdir/$_gitname-build"
+  cd "$_gitname"
+
   make DESTDIR="$pkgdir/" install
 }
 
