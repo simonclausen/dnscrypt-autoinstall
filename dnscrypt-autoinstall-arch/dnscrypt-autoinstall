@@ -13,8 +13,7 @@
 
 # Are you root?
 if [ $(id -u) != 0 ]; then
-	echo "Error!"
-	echo ""
+	echo -e "Error!\n"
 	echo "You need to be root to run this script."
 	exit 1
 fi
@@ -34,7 +33,7 @@ function config_interface {
 	echo "5) OpenNIC (Europe - no logs)"
 	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
 	echo ""
-	read -p "Select an option [1-6]: " OPTION
+	read -r -p "Select an option [1-6]: " OPTION
 	case $OPTION in
 		1)
 		WHICHRESOLVER=dnscrypteu
@@ -54,15 +53,16 @@ function config_interface {
 		6)
 		WHICHRESOLVER=soltysiak
 		;;
+		*)
+		exit 1
+		;;
 	esac
 	return 0
 }
 
 function config_do {
-	curl -Lo /etc/conf.d/dnscrypt-config $GITURL/dnscrypt-config-$WHICHRESOLVER
-	systemctl restart dnscrypt-proxy.service
-	systemctl enable --quiet dnscrypt-proxy.service
-	return 0
+	curl -Lo /etc/conf.d/dnscrypt-config $GITURL/dnscrypt-config-$WHICHRESOLVER && \
+	systemctl restart dnscrypt-proxy
 }
 
 echo -e "\nWelcome to dnscrypt-autoinstall.\n"
@@ -77,3 +77,6 @@ if [ $SHOWLIST == "y" ]; then
 	config_interface
 fi
 config_do
+
+# Run at startup
+systemctl is-enabled dnscrypt-proxy || systemctl enable dnscrypt-proxy
