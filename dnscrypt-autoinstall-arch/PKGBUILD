@@ -14,11 +14,6 @@ sha1sums=('SKIP')
 
 _gitname='dnscrypt-autoinstall'
 
-pkgver() {
-  cd "$srcdir/$_gitname"
-  git describe --tags | sed 's/-/./g'
-}
-
 package() {
   cd "$_gitname/dnscrypt-autoinstall-arch"
   install -Dm755 dnscrypt-autoinstall $pkgdir/usr/bin/dnscrypt-autoinstall
