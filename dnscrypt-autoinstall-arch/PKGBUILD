@@ -8,7 +8,7 @@ license=('GPL')
 provides=('dnscrypt-proxy')
 depends=('dnscrypt-proxy' 'libsodium' 'curl')
 makedepends=('git')
-install=('dnscrypt-autoinstall.install')
+install=dnscrypt-autoinstall.install
 source=('https://github.com/simonclausen/dnscrypt-autoinstall.git')
 sha1sums=('SKIP')
 
