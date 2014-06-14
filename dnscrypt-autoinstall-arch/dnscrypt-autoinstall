@@ -21,7 +21,7 @@ fi
 
 # Vars for stuff
 WHICHRESOLVER=dnscrypteu
-GITURL=https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/systemd
+GITURL=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd
 
 function config_interface {
 	echo ""
