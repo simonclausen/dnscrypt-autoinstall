@@ -59,9 +59,8 @@ function config_interface {
 }
 
 function config_do {
-	systemctl stop dnscrypt-proxy.service
 	curl -Lo /etc/conf.d/dnscrypt-config $GITURL/dnscrypt-config-$WHICHRESOLVER
-	systemctl start dnscrypt-proxy.service
+	systemctl restart dnscrypt-proxy.service
 	return 0
 }
 
