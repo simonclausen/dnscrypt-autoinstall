@@ -7,6 +7,7 @@ post_install() {
 }
 
 post_remove() {
+	systemctl daemon-reload
 	rm /etc/conf.d/dnscrypt-config
 	chattr -i /etc/resolv.conf
 	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
