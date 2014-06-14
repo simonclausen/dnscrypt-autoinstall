@@ -1,7 +1,7 @@
 pkgname=dnscrypt-autoinstall
 pkgver=0.3
 pkgrel=1
-pkgdesc='An improved dynamic tiling window manager'
+pkgdesc='Choose your DNSCrypt provider'
 arch=('i686' 'x86_64')
 url='http://simonclausen.dk/2013/09/dnscrypt-autoinstaller/'
 license=('GPL')
@@ -15,9 +15,10 @@ sha1sums=('SKIP')
 _gitname='dnscrypt-autoinstall'
 
 package() {
-  cd "$_gitname/dnscrypt-autoinstall-arch"
+  cd "$srcdir/$_gitname/dnscrypt-autoinstall-arch"
   install -Dm755 dnscrypt-autoinstall $pkgdir/usr/bin/dnscrypt-autoinstall
-  cd "$_gitname/systemd"
+  
+  cd "$srcdir/$_gitname/systemd"
   install -Dm644 dnscrypt-proxy.service $pkgdir/etc/systemd/system/dnscrypt-proxy.service
   install -Dm644 dnscrypt-proxy-backup.service $pkgdir/etc/systemd/system/dnscrypt-proxy-backup.service
 }
