@@ -10,7 +10,6 @@ makedepends=('git')
 install=dnscrypt-autoinstall.install
 source=('git://github.com/simonclausen/dnscrypt-autoinstall.git#branch=master')
 sha1sums=('SKIP')
-
 _gitname='dnscrypt-autoinstall'
 
 package() {
