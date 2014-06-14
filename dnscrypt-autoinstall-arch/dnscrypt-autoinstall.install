@@ -1,4 +1,5 @@
 post_install() {
+	systemctl daemon-reload
 	mv /etc/resolv.conf /etc/resolv.conf-dnscryptbak
 	echo "nameserver 127.0.0.1" > /etc/resolv.conf
 	echo "nameserver 127.0.0.2" >> /etc/resolv.conf
