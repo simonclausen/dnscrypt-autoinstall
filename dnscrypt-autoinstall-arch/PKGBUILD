@@ -20,8 +20,8 @@ pkgver() {
 }
 
 package() {
-  cd "$_gitname"
-  install -Dm755 $pkgdir/usr/bin/
+  cd "$_gitname/dnscrypt-autoinstall-arch"
+  install -Dm755 dnscrypt-autoinstall $pkgdir/usr/bin/dnscrypt-autoinstall
 }
 
 # vim:set ts=2 sw=2 et:
