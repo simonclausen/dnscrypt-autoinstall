@@ -1,0 +1,27 @@
+pkgname=dnscrypt-autoinstall
+pkgver=0.3
+pkgrel=1
+pkgdesc='An improved dynamic tiling window manager'
+arch=('i686' 'x86_64')
+url='http://simonclausen.dk/2013/09/dnscrypt-autoinstaller/'
+license=('GPL')
+provides=('dnscrypt-proxy')
+depends=('dnscrypt-proxy' 'libsodium' 'curl')
+makedepends=('git')
+install=('dnscrypt-autoinstall.install')
+source=('https://github.com/simonclausen/dnscrypt-autoinstall.git')
+sha1sums=('SKIP')
+
+_gitname='dnscrypt-autoinstall'
+
+pkgver() {
+  cd "$srcdir/$_gitname"
+  git describe --tags | sed 's/-/./g'
+}
+
+package() {
+  cd "$_gitname/dnscrypt-autoinstall-arch"
+  install -Dm755 dnscrypt-autoinstall $pkgdir/usr/bin/dnscrypt-autoinstall
+}
+
+# vim:set ts=2 sw=2 et:
