@@ -255,7 +255,7 @@ else
 		
 		# Dirty but dependable
 		chattr +i /etc/resolv.conf
-		
+
 		# Clean up
 		rm -rf ~/dnscrypt-autoinstall
 	fi

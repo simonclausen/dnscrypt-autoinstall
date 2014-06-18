@@ -1,6 +1,7 @@
 [Unit]
 Description=A tool for securing communications between a client and a DNS resolver (backup).
 After=network.target
+PartOf=dnscrypt-proxy.service
 # Only needed if you use pdnsd, other caching DNS servers can go here. Could be ignored too.
 #Before=pdnsd.service
 
