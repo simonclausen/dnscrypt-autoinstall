@@ -84,11 +84,11 @@ config_interface() {
 }
 
 config_do() {
+	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
 	fi
-	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	mv initscript-$WHICHRESOLVER.sh /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
 	update-rc.d dnscrypt-proxy defaults
