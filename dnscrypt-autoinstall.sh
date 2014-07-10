@@ -32,9 +32,23 @@ LSODIUMVER=0.4.5
 DNSCRYPTVER=1.4.0
 LSODIUMURL="https://download.libsodium.org/libsodium/releases"
 DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
+INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
-function config_interface {
+# Check files and set variables
+if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
+	DNSCRYPTINST=true
+fi
+
+if [ -e /usr/local/lib/libsodium.so ]; then
+	LSODIUMINST=true
+fi
+
+if [ -e /etc/init.d/dnscrypt-proxy ]; then
+	DNSCRYPTCONF=true
+fi
+
+config_interface() {
 	echo ""
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
@@ -69,13 +83,12 @@ function config_interface {
 	return 0
 }
 
-function config_do {
-	curl -Lo initscript-$WHICHRESOLVER.sh https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
-	if [ $DNSCRYPTCONF == true ]; then
+config_do() {
+	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
-		rm /etc/init.d/dnscrypt-proxy
 	fi
+	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	mv initscript-$WHICHRESOLVER.sh /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
 	update-rc.d dnscrypt-proxy defaults
@@ -83,16 +96,17 @@ function config_do {
 	return 0
 }
 
-function import_gpgkey {
+import_gpgkey() {
 	echo "Importing key with ID: $1"
 	gpg --keyserver keys.gnupg.net --recv-key $1
+
 	if [ $? -ne 0 ]; then
         	echo "Error importing key $1" 
 		exit 1
         fi
 }
 
-function verify_sig {
+verify_sig() {
 	echo "Verifying signature of: $2"
 	gpg --verify $1 $2
 
@@ -102,20 +116,25 @@ function verify_sig {
 	fi
 }
 
-if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
-	DNSCRYPTINST=true
+config_del() {
+	/etc/init.d/dnscrypt-proxy stop
+	update-rc.d -f dnscrypt-proxy remove
+	rm -f /etc/init.d/dnscrypt-proxy
+	rm -f /usr/local/sbin/dnscrypt-proxy
+	deluser dnscrypt
+	rm -rf /etc/dnscrypt
+	chattr -i /etc/resolv.conf
+	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+}
+
+# Debug: Remove after failed install
+if [ "$1" == "forcedel" ]; then
+	config_del
+	exit
 fi
 
-if [ -e /usr/local/lib/libsodium.so ]; then
-	LSODIUMINST=true
-fi
-
-if [ -e /etc/init.d/dnscrypt-proxy ]; then
-	DNSCRYPTCONF=true
-fi
-
-if [ $DNSCRYPTINST == true ]; then
-	if [ $DNSCRYPTCONF == true ]; then
+if [ "$DNSCRYPTINST" == "true" ]; then
+	if [ "$DNSCRYPTCONF" == "true" ]; then
 		echo ""
 		echo "Welcome to dnscrypt-autoinstall script."
 		echo ""
@@ -136,14 +155,7 @@ if [ $DNSCRYPTINST == true ]; then
 			exit
 			;;
 			2)
-			/etc/init.d/dnscrypt-proxy stop
-			update-rc.d -f dnscrypt-proxy remove
-			rm /etc/init.d/dnscrypt-proxy
-			rm /usr/local/sbin/dnscrypt-proxy
-			deluser dnscrypt
-			rm -rf /etc/dnscrypt
-			chattr -i /etc/resolv.conf
-			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+			config_del
 			echo "DNSCrypt has been removed. Quitting."
 			exit
 			;;
@@ -189,7 +201,7 @@ else
 		echo ""
 		echo "Would you like to see a list of supported providers?"
 		read -p "(DNSCrypt.eu is default) [y/n]: " -e -i n SHOWLIST
-		if [ $SHOWLIST == "y" ]; then
+		if [ "$SHOWLIST" == "y" ]; then
 			config_interface
 		fi
 		
@@ -204,14 +216,14 @@ else
 		import_gpgkey 1CDEA439
 		
 		# Is libsodium installed?
-		if [ $LSODIUMINST == false ]; then
+		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
 			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
 			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
-			
+		
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
-			
+		
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -222,7 +234,7 @@ else
 			cd ..
 		fi
 		
-		# Continue with dnscrypt installation 
+		# Continue with dnscrypt installation
 		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
