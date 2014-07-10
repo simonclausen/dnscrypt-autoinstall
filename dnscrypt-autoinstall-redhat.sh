@@ -85,7 +85,7 @@ config_interface() {
 
 config_do() {
 	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
-	if [ $DNSCRYPTCONF == true ]; then
+	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		chkconfig --del dnscrypt-proxy
 	fi
@@ -127,13 +127,13 @@ config_del() {
 }
 
 # Debug: Remove after failed install
-if [ $1 == forcedel ]; then
+if [ "$1" == "forcedel" ]; then
 	config_del
 	exit
 fi
 
-if [ $DNSCRYPTINST == true ]; then
-	if [ $DNSCRYPTCONF == true ]; then
+if [ "$DNSCRYPTINST" == "true" ]; then
+	if [ "$DNSCRYPTCONF" == "true" ]; then
 		echo ""
 		echo "Welcome to dnscrypt-autoinstall script."
 		echo ""
@@ -200,7 +200,7 @@ else
 		echo ""
 		echo "Would you like to see a list of supported providers?"
 		read -p "(DNSCrypt.eu is default) [y/n]: " -e -i n SHOWLIST
-		if [ $SHOWLIST == "y" ]; then
+		if [ "$SHOWLIST" == "y" ]; then
 			config_interface
 		fi
 		
@@ -217,7 +217,7 @@ else
 		import_gpgkey 1CDEA439
 		
 		# Is libsodium installed?
-		if [ $LSODIUMINST == false ]; then
+		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
 			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
 			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
