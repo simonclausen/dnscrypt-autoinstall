@@ -12,9 +12,8 @@
 # Version: 0.3
 #
 # TODO: 
-# # Proper init script, download newest version, handle failed download, fix quirks
-# # Configure Network Manager with nmcli
-# # Install systemd service if supported
+# Proper init script, download newest version, handle failed download, fix quirks
+# Fedora systemd service
 ###
 
 # Are you root?
@@ -33,10 +32,24 @@ LSODIUMVER=0.4.5
 DNSCRYPTVER=1.4.0
 LSODIUMURL="https://download.libsodium.org/libsodium/releases"
 DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
+INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
-function config_interface {
-  echo ""
+# Check files and set variables
+if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
+	DNSCRYPTINST=true
+fi
+
+if [ -e /usr/local/lib/libsodium.so ]; then
+	LSODIUMINST=true
+fi
+
+if [ -e /etc/init.d/dnscrypt-proxy ]; then
+	DNSCRYPTCONF=true
+fi
+
+config_interface() {
+	echo ""
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
 	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
@@ -70,12 +83,11 @@ function config_interface {
 	return 0
 }
 
-function config_do {
-	curl -Lo initscript-$WHICHRESOLVER.sh https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts/initscript-$WHICHRESOLVER.sh
+config_do() {
+	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ $DNSCRYPTCONF == true ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		chkconfig --del dnscrypt-proxy
-		rm -f /etc/init.d/dnscrypt-proxy
 	fi
 	mv initscript-$WHICHRESOLVER.sh /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
@@ -84,7 +96,7 @@ function config_do {
 	return 0
 }
 
-function import_gpgkey {
+import_gpgkey() {
 	echo "Importing key with ID: $1"
 	gpg --keyserver keys.gnupg.net --recv-key $1
 	if [ $? -ne 0 ]; then
@@ -93,7 +105,7 @@ function import_gpgkey {
         fi
 }
 
-function verify_sig {
+verify_sig() {
 	echo "Verifying signature of: $2"
 	gpg --verify $1 $2
 
@@ -103,16 +115,21 @@ function verify_sig {
 	fi
 }
 
-if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
-	DNSCRYPTINST=true
-fi
+config_del() {
+	/etc/init.d/dnscrypt-proxy stop
+	chkconfig --del dnscrypt-proxy
+	rm -f /etc/init.d/dnscrypt-proxy
+	rm -f /usr/local/sbin/dnscrypt-proxy
+	userdel -r dnscrypt
+	rm -rf /etc/dnscrypt
+	chattr -i /etc/resolv.conf
+	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+}
 
-if [ -e /usr/local/lib/libsodium.so ]; then
-	LSODIUMINST=true
-fi
-
-if [ -e /etc/init.d/dnscrypt-proxy ]; then
-	DNSCRYPTCONF=true
+# Debug: Remove after failed install
+if [ $1 == forcedel ]; then
+	config_del
+	exit
 fi
 
 if [ $DNSCRYPTINST == true ]; then
@@ -137,13 +154,7 @@ if [ $DNSCRYPTINST == true ]; then
 			exit
 			;;
 			2)
-			/etc/init.d/dnscrypt-proxy stop
-			chkconfig --del dnscrypt-proxy
-			rm -f /etc/init.d/dnscrypt-proxy
-			rm -f /usr/local/sbin/dnscrypt-proxy
-			userdel -r dnscrypt
-			chattr -i /etc/resolv.conf
-			mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+			config_del
 			echo "DNSCrypt has been removed. Quitting."
 			exit
 			;;
