@@ -5,7 +5,7 @@ dnscrypt-autoinstall
 Installation and autoconfigure script for Linux-based systems and DNSCrypt.
 
 This script will verify, build, and install DNSCrypt and finally set it up as a
-daemon service which runs on system startup. It also allows you to choose which
+daemon service that runs on system startup. It also allows you to choose which
 DNSCrypt service to use and easily reconfigure DNSCrypt, as well as uninstall it.
 
 **Todo:** proper init script, download newest version, handle failed download, fix quirks
