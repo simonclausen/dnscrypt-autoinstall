@@ -11,19 +11,19 @@ DNSCrypt service to use and easily reconfigure DNSCrypt, as well as uninstall it
 Todo: proper init script, download newest version, handle failed download, fix quirks
 
 ## Installation
-Debian, Ubuntu:
+###Debian, Ubuntu:
 
 `wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall.sh`
 `chmod +x dnscrypt-autoinstall.sh`
 `sudo ./dnscrypt-autoinstall.sh`
 
-Fedora, CentOS:
+###Fedora, CentOS:
 
 `wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall-redhat.sh`
 `chmod +x dnscrypt-autoinstall-redhat.sh`
 `sudo ./dnscrypt-autoinstall-redhat.sh`
 
-Arch Linux:
+###Arch Linux:
 
 Install dnscrypt-autoinstall from the AUR:
 
