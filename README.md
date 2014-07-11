@@ -36,4 +36,6 @@ https://aur.archlinux.org/packages/dnscrypt-autoinstall/
 ## Troubleshooting
 If the install fails at a particular stage and the script mentions DNSCrypt is already configured, use the `forcedel` argument:
 
-`sudo ./dnscrypt-autoinstall.sh forcedel`
+```
+sudo ./dnscrypt-autoinstall.sh forcedel
+```
