@@ -31,7 +31,7 @@ DNSCRYPTCONF=false
 LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
 LSODIUMURL="https://github.com/jedisct1/libsodium/archive/$LSODIUMVER.tar.gz"
-DNSCRYPTURL="https://github.com/opendns/dnscrypt-proxy/archive/$DNSCRYPTVER.tar.gz"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/archive/$DNSCRYPTVER.tar.gz"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
