@@ -111,7 +111,7 @@ import_gpgkey() {
 }
 
 verify_sig() {
-	echo "Verifying signature of: $1"
+	echo "Verifying signature of: ${1%%.sig}"
 	gpg --verify $1
 
 	if [ $? -ne 0 ]; then
