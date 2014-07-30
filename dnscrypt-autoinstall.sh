@@ -218,12 +218,8 @@ else
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			wget -c -t3 -T60 -O libsodium-$LSODIUMVER.tar.gz $LSODIUMURL
-			if [[ $? != 0 ]]; then
-				echo "download libsodium-$LSODIUMVER.tar.gz failed"
-				exit
-			fi
-			wget -c -t2 -T20 -O libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL.sig
+			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL
+			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL.sig
 		
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
@@ -239,12 +235,8 @@ else
 		fi
 		
 		# Continue with dnscrypt installation
-		wget -c -t3 -T60 -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL
-		if [[ $? != 0 ]]; then
-			echo "download dnscrypt-proxy-$DNSCRYPTVER.tar.gz failed"
-			exit
-		fi		
-		wget -t2 -T20 -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL.sig
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
