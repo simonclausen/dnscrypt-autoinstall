@@ -86,7 +86,7 @@ config_interface() {
 }
 
 config_do() {
-	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
+	curl --retry 5 -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
@@ -220,8 +220,8 @@ else
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/$LSODIUMVER.tar.gz
-			curl -o libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
+			curl --retry 5 -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/$LSODIUMVER.tar.gz
+			curl --retry 5 -o libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
 		
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
@@ -237,8 +237,8 @@ else
 		fi
 		
 		# Continue with dnscrypt installation
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/$DNSCRYPTVER.tar.gz
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		curl --retry 5 -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/$DNSCRYPTVER.tar.gz
+		curl --retry 5 -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
