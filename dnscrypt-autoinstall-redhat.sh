@@ -30,8 +30,8 @@ DNSCRYPTINST=false
 DNSCRYPTCONF=false
 LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
-LSODIUMURL="https://github.com/jedisct1/libsodium/archive/$LSODIUMVER.tar.gz"
-DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/archive/$DNSCRYPTVER.tar.gz"
+LSODIUMURL="https://github.com/jedisct1/libsodium/archive"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/archive"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
@@ -219,8 +219,8 @@ else
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
+			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/$LSODIUMVER.tar.gz
+			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/$LSODIUMVER.tar.gz.sig
 			
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
