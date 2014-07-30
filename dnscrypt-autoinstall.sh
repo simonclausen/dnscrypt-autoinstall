@@ -218,8 +218,14 @@ else
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-			curl -o libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
+			# use wget because curl make download fails on some slow network
+			# set retry & download timeout
+			wget -c -t3 -T60 --no-check-certificate -O libsodium-$LSODIUMVER.tar.gz $LSODIUMURL
+			if [[ $? != 0 ]]; then
+				echo "download libsodium-$LSODIUMVER.tar.gz failed."
+				exit
+			fi			
+			wget -c -t2 -T10 --no-check-certificate -O libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL.sig
 		
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig libsodium-$LSODIUMVER.tar.gz
@@ -235,8 +241,12 @@ else
 		fi
 		
 		# Continue with dnscrypt installation
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		wget -c -t3 -T60 --no-check-certificate -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL
+		if [[ $? != 0 ]]; then
+			echo "download dnscrypt-proxy-$DNSCRYPTVER.tar.gz failed."
+			exit
+		fi
+		wget -c -t2 -T10 --no-check-certificate -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
