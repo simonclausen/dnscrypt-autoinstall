@@ -221,6 +221,10 @@ else
 			# use wget because curl make download fails on some slow network
 			# set retry & download timeout
 			wget -c -t3 -T60 --no-check-certificate -O libsodium-$LSODIUMVER.tar.gz $LSODIUMURL
+			if [[ $? != 0 ]]; then
+				echo "download libsodium-$LSODIUMVER.tar.gz failed."
+				exit
+			fi			
 			wget -c -t2 -T10 --no-check-certificate -O libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL.sig
 		
 			# Verify signature
@@ -238,6 +242,10 @@ else
 		
 		# Continue with dnscrypt installation
 		wget -c -t3 -T60 --no-check-certificate -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL
+		if [[ $? != 0 ]]; then
+			echo "download dnscrypt-proxy-$DNSCRYPTVER.tar.gz failed."
+			exit
+		fi
 		wget -c -t2 -T10 --no-check-certificate -O dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL.sig
 		
 		# Verify signature
