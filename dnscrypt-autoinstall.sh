@@ -30,7 +30,7 @@ DNSCRYPTINST=false
 DNSCRYPTCONF=false
 LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
-LSODIUMURL="https://github.com/jedisct1/libsodium/archive"
+LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/0.6.1"
 DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/archive"
 GPGURL_LS="http://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
@@ -226,12 +226,12 @@ EOF
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -o libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/$LSODIUMVER.tar.gz
-			curl -o libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
-		
+			curl -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+			curl -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
+			
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig
-		
+			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			cd libsodium-$LSODIUMVER
 			./configure
@@ -243,8 +243,8 @@ EOF
 		fi
 		
 		# Continue with dnscrypt installation
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/$DNSCRYPTVER.tar.gz
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/$DNSCRYPTVER.tar.gz
+		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
