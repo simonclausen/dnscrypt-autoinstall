@@ -216,9 +216,8 @@ else
 		apt-get update
 		apt-get install -y automake libtool build-essential ca-certificates curl
 EOF
-		cd
-		mkdir dnscrypt-auto
-		cd dnscrypt-auto
+		mkdir ~/dnscrypt-auto
+		cd ~/dnscrypt-auto
 		
 		# Import GPG key to verify files
 		import_gpgkey 1CDEA439
@@ -273,7 +272,6 @@ EOF
 		chattr +i /etc/resolv.conf
 EOF
 		# Clean up
-		cd
-		rm -rf dnscrypt-auto
+		rm -rf ~/dnscrypt-auto
 	fi
 fi
