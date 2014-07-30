@@ -31,7 +31,7 @@ DNSCRYPTCONF=false
 LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
 LSODIUMURL="http://download.libsodium.org/libsodium/releases/libsodium-$LSODIUMVER.tar.gz"
-DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-proxy-$DNSCRYPTVER.tar.gz"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/archive/$DNSCRYPTVER.tar.gz"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
@@ -235,8 +235,8 @@ else
 		fi
 		
 		# Continue with dnscrypt installation
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL
-		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL.sig
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl -o dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz
