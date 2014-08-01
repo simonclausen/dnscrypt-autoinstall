@@ -255,12 +255,14 @@ EOF
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		pushd dnscrypt-proxy-$DNSCRYPTVER
 		./configure && make && \
-		sudo make install
-		popd
+		sudo bash <<EOF
+		make install
 		
 		# Add dnscrypt user and homedir
-		sudo adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
+		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
 			--disabled-password --disabled-login dnscrypt
+EOF
+		popd
 		
 		# Set up init script
 		config_do
