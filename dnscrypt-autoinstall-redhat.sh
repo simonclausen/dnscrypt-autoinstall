@@ -240,14 +240,14 @@ EOF
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			pushd libsodium-$LSODIUMVER
 			./configure && make && make check && \
-			sudo make install
-			popd
-			  
-			# Fedora does not include /usr/local/lib for linking
 			sudo bash <<EOF
+			make install
+			 
+			# Fedora does not include /usr/local/lib for linking
 			tee /etc/ld.so.conf.d/usr_local_lib.conf <<< /usr/local/lib 
 			ldconfig
 EOF
+			popd
 		fi
 		
 		# Continue with dnscrypt installation 
@@ -260,12 +260,14 @@ EOF
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		pushd dnscrypt-proxy-$DNSCRYPTVER
 		./configure && make && \
-		sudo make install
-		popd
+		sudo bash <<EOF 
+		make install
 		
 		# Add dnscrypt user and homedir
-		sudo mkdir -p /etc/dnscrypt/run
-		sudo useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
+		mkdir -p /etc/dnscrypt/run
+		useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
+EOF
+		popd
 		
 		# Set up init script
 		config_do
