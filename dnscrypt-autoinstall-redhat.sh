@@ -282,6 +282,7 @@ EOF
 		chattr +i /etc/resolv.conf
 EOF
 		# Clean up
+		popd
 		rm -rf $TMPDIR
 	fi
 fi
