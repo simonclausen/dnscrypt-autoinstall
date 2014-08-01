@@ -28,14 +28,18 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
+
 LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
 LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/0.6.1"
 DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
 GPGURL_LS="https://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
+
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
+# /tmp may be mounted noexec
+TMPDIR="$(dirname $0)/dnscrypt-autoinstall"
 
 # Check files and set variables
 if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
@@ -87,7 +91,7 @@ config_interface() {
 
 config_do() {
 	sudo bash <<EOF
-	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
+	curl --retry 5 -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		update-rc.d -f dnscrypt-proxy remove
@@ -216,8 +220,8 @@ else
 		apt-get update
 		apt-get install -y automake libtool build-essential ca-certificates curl
 EOF
-		mkdir ~/dnscrypt-auto
-		cd ~/dnscrypt-auto
+		[ ! -d "$TMPDIR" ] && mkdir $TMPDIR
+		pushd $TMPDIR
 		
 		# Import GPG key to verify files
 		import_gpgkey 1CDEA439
@@ -225,35 +229,34 @@ EOF
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-			curl -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
+			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
 			
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig
 			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
-			cd libsodium-$LSODIUMVER
-			./configure
-			make
-			make check
-			sudo make install
-			sudo ldconfig
-			cd ..
+			pushd libsodium-$LSODIUMVER
+			./configure && make && make check && \
+			sudo bash <<EOF
+			make install
+			ldconfig
+EOF
+			popd
 		fi
 		
 		# Continue with dnscrypt installation
-		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
 		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		cd dnscrypt-proxy-$DNSCRYPTVER
-		./configure
-		make
+		pushd dnscrypt-proxy-$DNSCRYPTVER
+		./configure && make && \
 		sudo make install
-		cd ..
+		popd
 		
 		# Add dnscrypt user and homedir
 		sudo adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
@@ -272,6 +275,6 @@ EOF
 		chattr +i /etc/resolv.conf
 EOF
 		# Clean up
-		rm -rf ~/dnscrypt-auto
+		rm -rf $TMPDIR
 	fi
 fi
