@@ -32,7 +32,6 @@ LSODIUMVER=0.6.1
 DNSCRYPTVER=1.4.0
 LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/0.6.1"
 DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.0"
-DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
 GPGURL_LS="https://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
