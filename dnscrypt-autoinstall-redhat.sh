@@ -38,7 +38,7 @@ INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-sc
 WHICHRESOLVER=dnscrypteu
 
 # /tmp may be mounted noexec
-TMPDIR="$(dirname $0)/dnscrypt-autoinstall"
+TMPDIR="$(dirname "$0")/dnscrypt-autoinstall"
 
 # Check files and set variables
 if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
@@ -105,7 +105,7 @@ EOF
 
 import_gpgkey() {
 	echo "Importing key with ID: $1"
-	gpg --keyserver keys.gnupg.net --recv-keys $1
+	gpg --keyserver keys.gnupg.net --recv-keys "$1"
 	if [ $? -ne 0 ]; then
         	echo "Error importing key $1" 
 		exit 1
@@ -114,7 +114,7 @@ import_gpgkey() {
 
 verify_sig() {
 	echo "Verifying signature of: ${1%%.sig}"
-	gpg --verify $1
+	gpg --verify "$1"
 
 	if [ $? -ne 0 ]; then
 		echo "Error verifying signature"
@@ -218,8 +218,8 @@ else
 		yum update
 		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
 EOF
-		[ ! -d "$TMPDIR" ] && mkdir $TMPDIR
-		pushd $TMPDIR
+		[ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
+		pushd "$TMPDIR"
 		
 		# Fedora 19/20 include libsodium
 		yum install -y libsodium-devel && LSODIUMINST=true
@@ -282,6 +282,6 @@ EOF
 EOF
 		# Clean up
 		popd
-		rm -rf $TMPDIR
+		rm -rf "$TMPDIR"
 	fi
 fi
