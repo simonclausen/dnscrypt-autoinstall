@@ -37,6 +37,9 @@ GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 WHICHRESOLVER=dnscrypteu
 
+# /tmp may be mounted noexec
+TMPDIR="$(dirname $0)/dnscrypt-autoinstall"
+
 # Check files and set variables
 if [ -e /usr/local/sbin/dnscrypt-proxy ]; then
 	DNSCRYPTINST=true
@@ -87,7 +90,7 @@ config_interface() {
 
 config_do() {
 	sudo bash <<EOF
-	curl -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
+	curl --retry 5 -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ "$DNSCRYPTCONF" == "true" ]; then
 		/etc/init.d/dnscrypt-proxy stop
 		chkconfig --del dnscrypt-proxy
@@ -215,8 +218,8 @@ else
 		yum update
 		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
 EOF
-		mkdir ~/dnscrypt-auto
-		cd ~/dnscrypt-auto
+		[ ! -d "$TMPDIR" ] && mkdir $TMPDIR
+		pushd $TMPDIR
 		
 		# Fedora 19/20 include libsodium
 		yum install -y libsodium-devel && LSODIUMINST=true
@@ -227,42 +230,43 @@ EOF
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
-			curl -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-			curl -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
+			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
+			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
 			
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig
 			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
-			cd libsodium-$LSODIUMVER
-			./configure
-			make
-			make check
-			sudo make install
-			cd ..
-			  
+			pushd libsodium-$LSODIUMVER
+			./configure && make && make check && \
+			sudo bash <<EOF
+			make install
+			 
 			# Fedora does not include /usr/local/lib for linking
-			sudo tee /etc/ld.so.conf.d/usr_local_lib.conf <<< /usr/local/lib 
-			sudo ldconfig
+			tee /etc/ld.so.conf.d/usr_local_lib.conf <<< /usr/local/lib 
+			ldconfig
+EOF
+			popd
 		fi
 		
 		# Continue with dnscrypt installation 
-		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
-		curl -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2 $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
 		
 		# Verify signature
-		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
 		
-		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		cd dnscrypt-proxy-$DNSCRYPTVER
-		./configure
-		make
-		sudo make install
-		cd ..
+		tar -jxf dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
+		pushd dnscrypt-proxy-$DNSCRYPTVER
+		./configure && make && \
+		sudo bash <<EOF 
+		make install
 		
 		# Add dnscrypt user and homedir
-		sudo mkdir -p /etc/dnscrypt/run
-		sudo useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
+		mkdir -p /etc/dnscrypt/run
+		useradd --system -d /etc/dnscrypt/run -s /bin/false dnscrypt
+EOF
+		popd
 		
 		# Set up init script
 		config_do
@@ -277,6 +281,7 @@ EOF
 		chattr +i /etc/resolv.conf
 EOF
 		# Clean up
-		rm -rf ~/dnscrypt-auto
+		popd
+		rm -rf $TMPDIR
 	fi
 fi
