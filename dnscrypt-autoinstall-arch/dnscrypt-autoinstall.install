@@ -4,6 +4,11 @@ post_install() {
 	echo "nameserver 127.0.0.1" > /etc/resolv.conf
 	echo "nameserver 127.0.0.2" >> /etc/resolv.conf
 	chattr +i /etc/resolv.conf
+	systemctl is-active dnscrypt-proxy || systemctl start dnscrypt-proxy
+}
+
+post_upgrade() {
+	systemctl daemon-reload
 }
 
 post_remove() {
