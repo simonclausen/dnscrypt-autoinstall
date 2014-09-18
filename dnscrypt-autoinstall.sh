@@ -17,10 +17,11 @@
 ###
 
 # Are you root?
-if [ $(id -u) == 0 ]; then
-	echo "Error!"
-	echo ""
+if [ "$(id -u)" == 0 ]; then
 	echo "You should not run this script directly as root."
+	exit 1
+elif ! sudo -v; then
+	echo "Please configure sudo correctly before running this script."
 	exit 1
 fi
 
