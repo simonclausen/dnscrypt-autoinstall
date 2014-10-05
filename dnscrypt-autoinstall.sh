@@ -226,6 +226,18 @@ EOF
 		# Import GPG key to verify files
 		import_gpgkey 1CDEA439
 		
+		# Is libsodium installed - if so, ask to update
+		if [ "$LSODIUMINST" == "true" ]; then
+		  echo ""
+		  echo "Libsodium is already installed."
+		  echo "Do you want to update to latest version (libsodium-$LSODIUMVER)?"
+		  read -p "[y/n]:" -e -i y SHOWLIST
+		  if [ "$SHOWLIST" == "y" ]; then
+		    # Guess we should uninstall libsodium first, but how?
+		    LSODIUMINST=false
+		  fi
+		fi
+		
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
