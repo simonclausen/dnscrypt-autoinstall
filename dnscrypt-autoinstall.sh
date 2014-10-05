@@ -29,10 +29,16 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=0.6.1
-DNSCRYPTVER=1.4.0
-LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/0.6.1"
-DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.0"
+
+# Get latest version number for libsodium and DNSCrypt.
+LSODIUMVER=$(wget -q -O - https://download.libsodium.org/libsodium/releases/ | grep -o libsodium-[0-9]\.[0-9]\.[0-9]\.tar\.gz | sed 's/".*//' | 
+	     sort -u | tail -n 1 | grep -o [0-9]\.[0-9]\.[0-9])
+
+DNSCRYPTVER=$(wget -q -O - http://download.dnscrypt.org/dnscrypt-proxy | grep -o dnscrypt-proxy-[0-9]\.[0-9]\.[0-9]\.tar\.gz | sed 's/".*//' | 
+	      sort -u | tail -n 1 | grep -o [0-9]\.[0-9]\.[0-9])
+
+LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/$LSODIUMVER1"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/$DNSCRYPTVER"
 GPGURL_LS="https://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
