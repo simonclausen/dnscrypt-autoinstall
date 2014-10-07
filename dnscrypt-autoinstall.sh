@@ -237,7 +237,7 @@ EOF
 			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			pushd libsodium-$LSODIUMVER
-			./configure && make && make check && \
+			./configure --enable-minimal && make && make check && \
 			sudo bash <<EOF
 			make install
 			ldconfig
