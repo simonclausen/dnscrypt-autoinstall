@@ -22,10 +22,14 @@ case "$1" in
     ;;
   stop)
     echo "Stopping $NAME"
-    pkill -f dnscrypt-proxy
+    pkill -f $DAEMON
+    ;;
+  restart)
+    $0 stop
+    $0 start
     ;;
   *)
-    echo "Usage: /etc/init.d/dnscrypt-proxy {start|stop}"
+    echo "Usage: /etc/init.d/dnscrypt-proxy {start|stop|restart}"
     exit 1
     ;;
 esac
