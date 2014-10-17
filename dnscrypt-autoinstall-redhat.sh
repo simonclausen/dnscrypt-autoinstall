@@ -29,10 +29,10 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=0.6.1
-DNSCRYPTVER=1.4.0
-LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/0.6.1"
-DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.0"
+LSODIUMVER=1.0.0
+DNSCRYPTVER=1.4.1
+LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/1.0.0"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.1"
 GPGURL_LS="https://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
@@ -239,7 +239,7 @@ EOF
 			
 			tar -zxf libsodium-$LSODIUMVER.tar.gz
 			pushd libsodium-$LSODIUMVER
-			./configure && make && make check && \
+			./configure --enable-minimal && make && make check && \
 			sudo bash <<EOF
 			make install
 			 
