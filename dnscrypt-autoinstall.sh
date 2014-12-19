@@ -218,7 +218,7 @@ else
 		# Install prereqs and make a working dir
 		sudo bash <<EOF
 		apt-get update
-		apt-get install -y automake libtool build-essential ca-certificates curl
+		apt-get install -y automake libtool build-essential bzip2 ca-certificates curl
 EOF
 		[ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
 		pushd "$TMPDIR"
