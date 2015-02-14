@@ -217,7 +217,7 @@ else
 		# Install prereqs and make a working dir
 		sudo bash <<EOF
 		yum update
-		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc sudo
 EOF
 		[ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
 		pushd "$TMPDIR"
