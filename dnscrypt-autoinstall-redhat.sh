@@ -8,12 +8,9 @@
 # as a daemon service that runs on system startup. It also gives you the option to
 # choose which DNSCrypt service to use and easily reconfigure DNSCrypt and uninstall it.
 #
-# Author: Simon Clausen <kontakt@simonclausen.dk>
-# Version: 0.3
+# Author: Simon Clausen <kontakt@simonclausen.dk> + contributers. Thank you very much!
+# Project site: https://github.com/simonclausen/dnscrypt-autoinstall
 #
-# TODO: 
-# Proper init script, download newest version, handle failed download, fix quirks
-# Fedora systemd service
 ###
 
 # Are you root?

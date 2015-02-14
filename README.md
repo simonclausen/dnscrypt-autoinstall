@@ -8,8 +8,6 @@ This script will verify, build, and install DNSCrypt and finally set it up as a
 daemon service that runs on system startup. It also allows you to choose which
 DNSCrypt service to use and easily reconfigure DNSCrypt, as well as uninstall it.
 
-**Todo:** systemd for Fedora/CentOS, download newest version, handle failed download
-
 ## Installation
 ###Debian, Ubuntu:
 

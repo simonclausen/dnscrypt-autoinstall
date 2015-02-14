@@ -9,10 +9,8 @@
 #
 # This script should work on new(er) debian'ish releases.
 #
-# Author: Simon Clausen <kontakt@simonclausen.dk>
-# Version: 0.3
-#
-# Todo: proper init script, download newest version, handle failed download, fix quirks
+# Author: Simon Clausen <kontakt@simonclausen.dk> + contributers. Thank you very much!
+# Project site: https://github.com/simonclausen/dnscrypt-autoinstall
 #
 ###
 
