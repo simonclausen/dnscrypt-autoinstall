@@ -29,7 +29,7 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=1.0.1
+LSODIUMVER=1.0.2
 DNSCRYPTVER=1.4.3
 LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/1.0.1"
 DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.3"
