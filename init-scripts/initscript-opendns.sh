@@ -18,7 +18,7 @@ NAME=dnscrypt-proxy
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --user=dnscrypt -R OpenDNS
+    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt -R OpenDNS
     ;;
   stop)
     echo "Stopping $NAME"
