@@ -27,10 +27,10 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=1.0.2
-DNSCRYPTVER=1.4.3
-LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/1.0.2"
-DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.4.3"
+LSODIUMVER=1.0.3
+DNSCRYPTVER=1.5.0
+LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/1.0.3"
+DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.5.0"
 GPGURL_LS="https://download.libsodium.org/libsodium/releases"
 GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
@@ -182,6 +182,10 @@ if [ "$DNSCRYPTINST" == "true" ]; then
 		echo "Remove DNSCrypt and it's configuration completely"
 		echo "from the system and run this script again."
 		echo ""
+		echo "To uninstall DNSCrypt, try running this script"
+		echo "again with the 'forcedel' argument. For example:"
+		echo "    ./dnscrypt-autoinstall.sh forcedel"
+		echo ""
 		echo "Quitting."
 		exit 1
 	fi
@@ -195,6 +199,10 @@ else
 		echo ""
 		echo "To use DNSCypt, you need to either uninstall it"
 		echo "or make it listen on another IP than 127.0.0.1."
+		echo ""
+		echo "To uninstall DNSCrypt, try running this script"
+		echo "again with the 'forcedel' argument. For example:"
+		echo "    ./dnscrypt-autoinstall.sh forcedel"
 		echo ""
 		echo "Quitting."
 		exit 1
@@ -222,7 +230,7 @@ EOF
 		pushd "$TMPDIR"
 		
 		# Import GPG key to verify files
-		import_gpgkey BA709FE1
+		import_gpgkey 54A2B8892CC3D6A597B92B6C210627AABA709FE1
 		
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
@@ -244,13 +252,13 @@ EOF
 		fi
 		
 		# Continue with dnscrypt installation
-		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
-		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2 $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
 		
 		# Verify signature
-		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
+		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
 		
-		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		tar -jxf dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
 		pushd dnscrypt-proxy-$DNSCRYPTVER
 		./configure && make && \
 		sudo bash <<EOF
