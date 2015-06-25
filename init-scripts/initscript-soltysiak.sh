@@ -21,7 +21,7 @@ PKEY=25C4:E188:2915:4697:8F9C:2BBD:B6A7:AFA4:01ED:A051:0508:5D53:03E7:1928:C066:
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
+    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
     ;;
   stop)
     echo "Stopping $NAME"
