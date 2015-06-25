@@ -222,7 +222,7 @@ EOF
 		pushd "$TMPDIR"
 		
 		# Import GPG key to verify files
-		import_gpgkey BA709FE1
+		import_gpgkey 54A2B8892CC3D6A597B92B6C210627AABA709FE1
 		
 		# Is libsodium installed?
 		if [ "$LSODIUMINST" == "false" ]; then
