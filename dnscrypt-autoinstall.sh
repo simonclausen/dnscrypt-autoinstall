@@ -182,6 +182,10 @@ if [ "$DNSCRYPTINST" == "true" ]; then
 		echo "Remove DNSCrypt and it's configuration completely"
 		echo "from the system and run this script again."
 		echo ""
+		echo "To uninstall DNSCrypt, try running this script"
+		echo "again with the 'forcedel' argument. For example:"
+		echo "    ./dnscrypt-autoinstall.sh forcedel"
+		echo ""
 		echo "Quitting."
 		exit 1
 	fi
@@ -195,6 +199,10 @@ else
 		echo ""
 		echo "To use DNSCypt, you need to either uninstall it"
 		echo "or make it listen on another IP than 127.0.0.1."
+		echo ""
+		echo "To uninstall DNSCrypt, try running this script"
+		echo "again with the 'forcedel' argument. For example:"
+		echo "    ./dnscrypt-autoinstall.sh forcedel"
 		echo ""
 		echo "Quitting."
 		exit 1
