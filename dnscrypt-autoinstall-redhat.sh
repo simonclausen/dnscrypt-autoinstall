@@ -55,38 +55,55 @@ config_interface() {
 	echo ""
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
-	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
-	echo "2) OpenDNS (Anycast)"
-	echo "3) CloudNS (Australia - no logs, DNSSEC)"
-	echo "4) OpenNIC (Japan - no logs)"
-	echo "5) OpenNIC (Europe - no logs)"
-	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
+	echo "1) Off           (Regular, unencrypted DNS)"
+	echo "2) DNSCrypt.eu   (Europe - no logs, DNSSEC)"
+	echo "3) OpenDNS       (Anycast)"
+	echo "4) CloudNS       (Australia - no logs, DNSSEC)"
+	echo "5) OpenNIC       (Japan - no logs)"
+	echo "6) OpenNIC       (Europe - no logs)"
+	echo "7) Soltysiak.com (Europe - no logs, DNSSEC)"
 	echo ""
-	read -p "Select an option [1-6]: " OPTION
+	read -p "Select an option [1-7]: " OPTION
 	case $OPTION in
 		1)
-		WHICHRESOLVER=dnscrypteu
+		WHICHRESOLVER=off
 		;;
 		2)
-		WHICHRESOLVER=opendns
+		WHICHRESOLVER=dnscrypteu
 		;;
 		3)
-		WHICHRESOLVER=cloudns
+		WHICHRESOLVER=opendns
 		;;
 		4)
-		WHICHRESOLVER=opennicjp
+		WHICHRESOLVER=cloudns
 		;;
 		5)
-		WHICHRESOLVER=openniceu
+		WHICHRESOLVER=opennicjp
 		;;
 		6)
+		WHICHRESOLVER=openniceu
+		;;
+		7)
 		WHICHRESOLVER=soltysiak
 		;;
 	esac
 	return 0
 }
 
+config_resolv() {
+	# Set up resolv.conf to use dnscrypt
+	sudo bash <<EOF
+	chattr -i /etc/resolv.conf
+	echo "nameserver 127.0.0.1" > /etc/resolv.conf
+	echo "nameserver 127.0.0.2" >> /etc/resolv.conf
+	
+	# Make immutable. Dirty but dependable.
+	chattr +i /etc/resolv.conf
+EOF
+}
+
 config_do() {
+	# Download and install the initscript for the chosen provider (including empty script for "off" mode).
 	sudo bash <<EOF
 	curl --retry 5 -Lo initscript-$WHICHRESOLVER.sh $INITURL/initscript-$WHICHRESOLVER.sh
 	if [ "$DNSCRYPTCONF" == "true" ]; then
@@ -95,15 +112,31 @@ config_do() {
 	fi
 	mv initscript-$WHICHRESOLVER.sh /etc/init.d/dnscrypt-proxy
 	chmod +x /etc/init.d/dnscrypt-proxy
-	chkconfig --add dnscrypt-proxy
-	/etc/init.d/dnscrypt-proxy start
 EOF
-	return 0
+
+	if [ "$WHICHRESOLVER" == "off" ]; then
+		# User has chosen to turn off DNSCrypt and use regular, unencrypted DNS.
+		# Restore resolv.conf-dnscryptbak by copying it to resolv.conf. Leave the backup in place in case the user uninstalls or turns DNSCrypt off again later.
+		sudo bash <<EOF
+		chattr -i /etc/resolv.conf
+		cp -p /etc/resolv.conf-dnscryptbak /etc/resolv.conf
+EOF
+		return 0
+	else
+		# User has chosen a DNSCrypt provider. Start DNSCrypt.
+		sudo bash <<EOF
+		chkconfig --add dnscrypt-proxy
+		/etc/init.d/dnscrypt-proxy start
+EOF
+		config_resolv
+		return 0
+	fi
 }
 
 import_gpgkey() {
 	echo "Importing key with ID: $1"
 	gpg --keyserver keys.gnupg.net --recv-keys "$1"
+
 	if [ $? -ne 0 ]; then
         	echo "Error importing key $1" 
 		exit 1
@@ -142,22 +175,22 @@ fi
 if [ "$DNSCRYPTINST" == "true" ]; then
 	if [ "$DNSCRYPTCONF" == "true" ]; then
 		echo ""
-		echo "Welcome to dnscrypt-autoinstall script."
+		echo "Welcome to the dnscrypt-autoinstall script."
 		echo ""
 		echo "It seems like DNSCrypt was installed and configured by this script."
 		echo ""
 		echo "What would you like to do?"
 		echo ""
-		echo "1) Configure another DNSCrypt service"
-		echo "2) Uninstall DNSCrypt and remove the auto-startup config"
-		echo "3) Exit"
+		echo "1) Configure another DNSCrypt service or turn off DNSCrypt."
+		echo "2) Uninstall DNSCrypt and remove the auto-startup configuration."
+		echo "3) Exit."
 		echo ""
 		read -p "Select an option [1-3]: " OPTION
 		case $OPTION in
 			1)
 			config_interface
 			config_do
-			echo "Reconfig done. Quitting."
+			echo "Reconfiguration done. Quitting."
 			exit
 			;;
 			2)
@@ -206,7 +239,7 @@ else
 		exit 1
 	else
 		echo ""
-		echo "Welcome to dnscrypt-autoinstall script."
+		echo "Welcome to the dnscrypt-autoinstall script."
 		echo ""
 		echo "This will install DNSCrypt and autoconfigure it to run as a daemon at start up."
 		echo ""
@@ -274,20 +307,20 @@ EOF
 EOF
 		popd
 		
+		# Backup resolv.conf
+		sudo bash <<EOF
+		cp -p /etc/resolv.conf /etc/resolv.conf-dnscryptbak
+EOF
+		
 		# Set up init script
 		config_do
 		
-		# Set up resolv.conf to use dnscrypt
-		sudo bash <<EOF
-		mv /etc/resolv.conf /etc/resolv.conf-dnscryptbak
-		echo "nameserver 127.0.0.1" > /etc/resolv.conf
-		echo "nameserver 127.0.0.2" >> /etc/resolv.conf
-		
-		# Dirty but dependable
-		chattr +i /etc/resolv.conf
-EOF
 		# Clean up
 		popd
 		rm -rf "$TMPDIR"
+		
+		echo ""
+		echo "DNSCrypt is now installed."
+		echo "You can run this script again to reconfigure, turn off, or uninstall it."
 	fi
 fi
