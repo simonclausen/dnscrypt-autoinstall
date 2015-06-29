@@ -13,6 +13,7 @@ ExecStart=/usr/bin/dnscrypt-proxy \
 	--provider-name=${DNSCRYPT_PROVIDER_NAME} \
 	--provider-key=${DNSCRYPT_PROVIDER_KEY} \
 	--user=${DNSCRYPT_USER}
+	--ephemeral-keys
 Restart=on-abort
 
 [Install]
