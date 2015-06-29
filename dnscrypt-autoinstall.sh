@@ -27,13 +27,11 @@ fi
 LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
-LSODIUMVER=1.0.3
-DNSCRYPTVER=1.5.0
-LSODIUMURL="https://github.com/jedisct1/libsodium/releases/download/1.0.3"
-DNSCRYPTURL="https://github.com/jedisct1/dnscrypt-proxy/releases/download/1.5.0"
-GPGURL_LS="https://download.libsodium.org/libsodium/releases"
-GPGURL_DC="http://download.dnscrypt.org/dnscrypt-proxy"
+LSODIUMURL="https://download.libsodium.org/libsodium/releases"
+DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
+LSODIUMVER=$(curl --retry 5 -L $LSODIUMURL | grep -o 'libsodium-1.[0-9].[0-9].tar.gz' | sed 's/".*//' | sort -u | tail -n 1 | grep -o '[0-9].[0-9].[0-9]')
+DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | grep -o 'dnscrypt-proxy-1.[0-9].[0-9].tar.gz' | sed 's/".*//' | sort -u | tail -n 1 | grep -o '[0-9].[0-9].[0-9]')
 WHICHRESOLVER=dnscrypteu
 
 # /tmp may be mounted noexec
@@ -236,7 +234,7 @@ EOF
 		if [ "$LSODIUMINST" == "false" ]; then
 			# Nope? Then let's get it set up
 			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz
-			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz.sig $GPGURL_LS/libsodium-$LSODIUMVER.tar.gz.sig
+			curl --retry 5 -Lo libsodium-$LSODIUMVER.tar.gz.sig $LSODIUMURL/libsodium-$LSODIUMVER.tar.gz.sig
 			
 			# Verify signature
 			verify_sig libsodium-$LSODIUMVER.tar.gz.sig
@@ -252,13 +250,13 @@ EOF
 		fi
 		
 		# Continue with dnscrypt installation
-		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2 $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
-		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig $GPGURL_DC/dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
+		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
 		# Verify signature
-		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.bz2.sig
+		verify_sig dnscrypt-proxy-$DNSCRYPTVER.tar.gz.sig
 		
-		tar -jxf dnscrypt-proxy-$DNSCRYPTVER.tar.bz2
+		tar -zxf dnscrypt-proxy-$DNSCRYPTVER.tar.gz
 		pushd dnscrypt-proxy-$DNSCRYPTVER
 		./configure && make && \
 		sudo bash <<EOF
