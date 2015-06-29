@@ -135,6 +135,9 @@ config_del() {
 	rm -f /usr/local/lib/pkgconfig/libsodium.pc
 	rm -fr /usr/local/include/sodium
 	
+	# Uninstall libsodium on Fedora 19/20
+	yum remove -y libsodium-devel
+	
 	# Restore backed-up resolv.conf
 	chattr -i /etc/resolv.conf
 	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
