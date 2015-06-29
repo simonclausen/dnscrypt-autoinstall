@@ -124,12 +124,20 @@ verify_sig() {
 
 config_del() {
 	sudo bash <<EOF
+	# Uninstall dnscrypt-proxy
 	/etc/init.d/dnscrypt-proxy stop
 	update-rc.d -f dnscrypt-proxy remove
 	rm -f /etc/init.d/dnscrypt-proxy
 	rm -f /usr/local/sbin/dnscrypt-proxy
 	deluser dnscrypt
 	rm -rf /etc/dnscrypt
+	
+	# Uninstall libsodium
+	rm -f /usr/local/lib/libsodium.*
+	rm -f /usr/local/lib/pkgconfig/libsodium.pc
+	rm -fr /usr/local/include/sodium
+	
+	# Restore backed-up resolv.conf
 	chattr -i /etc/resolv.conf
 	mv /etc/resolv.conf-dnscryptbak /etc/resolv.conf
 EOF
