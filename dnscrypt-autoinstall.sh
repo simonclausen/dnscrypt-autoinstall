@@ -57,13 +57,16 @@ config_interface() {
 	echo "Which DNSCrypt service would you like to use?"
 	echo ""
 	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
-	echo "2) OpenDNS (Anycast)"
+	echo "2) Cisco OpenDNS (Anycast)"
 	echo "3) CloudNS (Australia - no logs, DNSSEC)"
 	echo "4) OpenNIC (Japan - no logs)"
-	echo "5) OpenNIC (Europe - no logs)"
-	echo "6) Soltysiak.com (Europe - no logs, DNSSEC)"
+	echo "5) OpenNIC (Europe - no logs, whitelisted users only)"
+	echo "6) OpenNIC (Toronto, Canada - no logs)"
+	echo "7) OpenNIC (San Francisco, USA - no logs)"
+	echo "8) OkTurtles (Georgia, USA - no logs)"
+	echo "9) Soltysiak.com (Europe - no logs, DNSSEC)"
 	echo ""
-	read -p "Select an option [1-6]: " OPTION
+	read -p "Select an option [1-9]: " OPTION
 	case $OPTION in
 		1)
 		WHICHRESOLVER=dnscrypteu
@@ -81,6 +84,15 @@ config_interface() {
 		WHICHRESOLVER=openniceu
 		;;
 		6)
+		WHICHRESOLVER=opennicca
+		;;
+		7)
+		WHICHRESOLVER=opennicusa
+		;;
+		8)
+		WHICHRESOLVER=okturtles
+		;;
+		9)
 		WHICHRESOLVER=soltysiak
 		;;
 	esac
