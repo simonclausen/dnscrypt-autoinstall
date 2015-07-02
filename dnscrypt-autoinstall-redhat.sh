@@ -8,7 +8,7 @@
 # as a daemon service that runs on system startup. It also gives you the option to
 # choose which DNSCrypt service to use and easily reconfigure DNSCrypt and uninstall it.
 #
-# Author: Simon Clausen <kontakt@simonclausen.dk> + contributers. Thank you very much!
+# Authors: https://github.com/simonclausen/dnscrypt-autoinstall/graphs/contributors
 # Project site: https://github.com/simonclausen/dnscrypt-autoinstall
 #
 ###

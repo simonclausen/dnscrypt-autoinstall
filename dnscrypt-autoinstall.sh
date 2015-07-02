@@ -9,7 +9,7 @@
 #
 # This script should work on new(er) debian'ish releases.
 #
-# Author: Simon Clausen <kontakt@simonclausen.dk> + contributers. Thank you very much!
+# Authors: https://github.com/simonclausen/dnscrypt-autoinstall/graphs/contributors
 # Project site: https://github.com/simonclausen/dnscrypt-autoinstall
 #
 ###

@@ -9,7 +9,8 @@
 # Description:       dnscrypt-proxy secure DNS client
 ### END INIT INFO
 
-# Author: Simon Clausen <kontakt@simonclausen.dk> 
+# Authors: https://github.com/simonclausen/dnscrypt-autoinstall/graphs/contributors
+# Project site: https://github.com/simonclausen/dnscrypt-autoinstall 
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
