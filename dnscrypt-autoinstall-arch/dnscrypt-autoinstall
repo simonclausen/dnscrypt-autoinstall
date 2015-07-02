@@ -29,10 +29,10 @@ function config_interface {
 	echo "3) CloudNS       (Australia - no logs, DNSSEC)"
 	echo "4) OpenNIC       (Japan - no logs)"
 	echo "5) OpenNIC       (Europe - no logs, whitelisted users only)"
-+	echo "6) OpenNIC       (Toronto, Canada - no logs)"
-+	echo "7) OpenNIC       (San Francisco, USA - no logs)"
-+	echo "8) OkTurtles     (Georgia, USA - no logs)"
-+	echo "9) Soltysiak.com (Europe - no logs, DNSSEC)\n"
+	echo "6) OpenNIC       (Toronto, Canada - no logs)"
+	echo "7) OpenNIC       (San Francisco, USA - no logs)"
+	echo "8) OkTurtles     (Georgia, USA - no logs)"
+	echo "9) Soltysiak.com (Europe - no logs, DNSSEC)\n"
 	read -r -p "Select an option [1-9]: " OPTION
 	case $OPTION in
 		1)
