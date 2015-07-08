@@ -24,11 +24,11 @@ GITURL=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/maste
 
 function config_interface {
 	echo -e "\nWhich DNSCrypt service would you like to use?\n"
-	echo "1) DNSCrypt.eu      (Europe - no logs, DNSSEC)"
-	echo "2) OpenDNS          (Anycast)"
-	echo "3) CloudNS          (Australia - no logs, DNSSEC)"
-	echo "4) OpenNIC          (Japan - no logs)"
-	echo "5) OpenNIC          (Europe - no logs)"
+	echo "1) DNSCrypt.eu (Europe - no logs, DNSSEC)"
+	echo "2) OpenDNS (Anycast)"
+	echo "3) CloudNS (Australia - no logs, DNSSEC)"
+	echo "4) OpenNIC (Japan - no logs)"
+	echo "5) OpenNIC (Europe - no logs)"
 	echo -e "6) Soltysiak.com (Europe - no logs, DNSSEC)\n"
 	read -r -p "Select an option [1-6]: " OPTION
 	case $OPTION in
