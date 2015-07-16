@@ -10,16 +10,19 @@
 ### END INIT INFO
 
 # Authors: https://github.com/simonclausen/dnscrypt-autoinstall/graphs/contributors
-# Project site: https://github.com/simonclausen/dnscrypt-autoinstall 
+# Project site: https://github.com/simonclausen/dnscrypt-autoinstall
 
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
 NAME=dnscrypt-proxy
+ADDRESS=23.226.227.93
+PNAME=2.dnscrypt-cert.okturtles.com
+PKEY=1D85:3953:E34F:AFD0:05F9:4C6F:D1CC:E635:D411:9904:0D48:D19A:5D35:0B6A:7C81:73CB
 
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt -R OpenDNS
+    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
     ;;
   stop)
     echo "Stopping $NAME"

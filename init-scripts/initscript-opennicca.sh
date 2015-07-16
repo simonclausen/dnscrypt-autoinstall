@@ -15,11 +15,14 @@
 PATH=/usr/sbin:/usr/bin:/sbin:/bin
 DAEMON=/usr/local/sbin/dnscrypt-proxy
 NAME=dnscrypt-proxy
+ADDRESS=69.28.67.83
+PNAME=2.fvz-rec-ca-on-01.dnscrypt-cert.meo.ws
+PKEY=8EE0:828C:9F1C:DEB7:6ECB:E4FE:A219:F34A:0B1C:4E8E:CE86:BA63:F135:EE76:C27A:E394
 
 case "$1" in
   start)
     echo "Starting $NAME"
-    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt -R OpenDNS
+    $DAEMON --daemonize --ephemeral-keys --user=dnscrypt --resolver-address=$ADDRESS --provider-name=$PNAME --provider-key=$PKEY
     ;;
   stop)
     echo "Stopping $NAME"

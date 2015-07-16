@@ -7,8 +7,9 @@
 # system startup. It gives you the option to choose which DNSCrypt service to use 
 # and easily reconfigure DNSCrypt.
 #
-# Author: Simon Clausen <kontakt@simonclausen.dk>
-# Version: 0.3
+# Authors: https://github.com/simonclausen/dnscrypt-autoinstall/graphs/contributors
+# Project site: https://github.com/simonclausen/dnscrypt-autoinstall
+#
 ###
 
 # Are you root?
@@ -31,9 +32,10 @@ function config_interface {
 	echo "5) OpenNIC       (Europe - no logs, whitelisted users only)"
 	echo "6) OpenNIC       (Toronto, Canada - no logs)"
 	echo "7) OpenNIC       (San Francisco, USA - no logs)"
-	echo "8) OkTurtles     (Georgia, USA - no logs)"
-	echo "9) Soltysiak.com (Europe - no logs, DNSSEC)\n"
-	read -r -p "Select an option [1-9]: " OPTION
+	echo "8) OpenNIC       (Seattle, USA - no logs)"
+	echo "9) OkTurtles     (Georgia, USA - no logs)"
+	echo "10) Soltysiak.com (Europe - no logs, DNSSEC)\n"
+	read -r -p "Select an option [1-10]: " OPTION
 	case $OPTION in
 		1)
 		WHICHRESOLVER=dnscrypteu
@@ -54,12 +56,15 @@ function config_interface {
 		WHICHRESOLVER=opennicca
 		;;
 		7)
-		WHICHRESOLVER=opennicusa
+		WHICHRESOLVER=opennicusasfo
 		;;
 		8)
-		WHICHRESOLVER=okturtles
+		WHICHRESOLVER=opennicusasea
 		;;
 		9)
+		WHICHRESOLVER=okturtles
+		;;
+		10)
 		WHICHRESOLVER=soltysiak
 		;;
 		*)
