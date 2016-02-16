@@ -150,7 +150,7 @@ EOF
 
 import_gpgkey() {
 	echo "Importing key with ID: $1"
-	gpg --keyserver keys.gnupg.net --recv-keys "$1"
+	gpg  --recv-keys "$1"
 
 	if [ $? -ne 0 ]; then
 		echo "Error importing key $1" 
