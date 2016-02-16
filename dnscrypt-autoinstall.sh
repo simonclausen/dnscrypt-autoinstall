@@ -172,8 +172,7 @@ config_del() {
 	sudo bash <<EOF
 	/etc/init.d/dnscrypt-proxy stop
 	update-rc.d -f dnscrypt-proxy remove
-	rm -f /etc/init.d/dnscrypt-proxy
-	rm -f /usr/local/sbin/dnscrypt-proxy
+    apt-get -y remove dnscrypt-proxy
 	deluser dnscrypt
 	rm -rf /etc/dnscrypt
 	chattr -i /etc/resolv.conf
@@ -270,7 +269,7 @@ else
 		# Install prereqs and make a working dir
 		sudo bash <<EOF
 		apt-get update
-		apt-get install -y automake libtool build-essential ca-certificates curl sudo
+		apt-get install -y automake libtool build-essential ca-certificates curl sudo checkinstall
 EOF
 		[ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
 		pushd "$TMPDIR"
@@ -291,7 +290,7 @@ EOF
 			pushd libsodium-$LSODIUMVER
 			./configure --enable-minimal && make && make check && \
 			sudo bash <<EOF
-			make install
+			checkinstall
 			ldconfig
 EOF
 			popd
@@ -308,11 +307,11 @@ EOF
 		pushd dnscrypt-proxy-$DNSCRYPTVER
 		./configure && make && \
 		sudo bash <<EOF
-		make install
-		
 		# Add dnscrypt user and homedir
 		adduser --system --home /etc/dnscrypt/run --shell /bin/false --group \
 			--disabled-password --disabled-login dnscrypt
+
+		checkinstall
 EOF
 		popd
 		
@@ -326,7 +325,7 @@ EOF
 		
 		# Clean up
 		popd
-		rm -rf "$TMPDIR"
+		sudo rm -rf "$TMPDIR"
 		
 		echo ""
 		echo "DNSCrypt is now installed."
