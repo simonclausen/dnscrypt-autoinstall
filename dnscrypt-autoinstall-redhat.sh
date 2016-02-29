@@ -27,7 +27,7 @@ LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
 LSODIUMURL="https://download.libsodium.org/libsodium/releases"
-DNSCRYPTURL="http://download.dnscrypt.org/dnscrypt-proxy"
+DNSCRYPTURL="https://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
 LSODIUMVER=$(curl --retry 5 -L $LSODIUMURL | awk -F'(.tar|libsodium-)' '/libsodium-1/ {v=$2}; END {print v}')
 DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
