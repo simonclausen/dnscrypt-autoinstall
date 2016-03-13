@@ -275,9 +275,6 @@ else
 		zypper ref
 		zypper in -y automake gcc gcc-c++ libtool
 EOF
-		[ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
-		pushd "$TMPDIR"
-		
 		# Import GPG key to verify files
 		import_gpgkey 54A2B8892CC3D6A597B92B6C210627AABA709FE1
 		
@@ -289,6 +286,9 @@ EOF
 EOF
 			popd
 		fi
+		
+                [ ! -d "$TMPDIR" ] && mkdir "$TMPDIR"
+		pushd "$TMPDIR"
 		
 		# Continue with dnscrypt installation 
 		curl --retry 5 -Lo dnscrypt-proxy-$DNSCRYPTVER.tar.gz $DNSCRYPTURL/dnscrypt-proxy-$DNSCRYPTVER.tar.gz
