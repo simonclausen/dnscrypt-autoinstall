@@ -2,6 +2,9 @@ dnscrypt-autoinstall
 ====================
 A script for installing and automatically configuring DNSCrypt on Linux-based systems.
 
+## Alternatives
+Development on this project has slowed down a lot and [DNSCrypt-Loader](https://github.com/gortcodex/dnscrypt-loader) provides some very nice features that this project has yet to implement (use of automatically updated official dnscrypt server list for one): go have a look at that one to see if that does not better support your need. Pull requests for this project are of course still very welcome if you feel like it :)
+
 ## Description
 
 DNSCrypt is a protocol for securing communications between a client and a DNS resolver by encrypting DNS queries and responses. It verifies that responses you get from a DNS provider have actually been sent by that provider, and haven't been tampered with.
