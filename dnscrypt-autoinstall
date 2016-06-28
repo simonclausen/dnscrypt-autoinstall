@@ -1,0 +1,158 @@
+#!/bin/bash
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
+
+argv0=dnscrypt-autoinstall
+dnscryptinst=0
+libsodiuminst=0
+dnscryptconf=0
+whichresolver=dnscrypteu
+startdir="$PWD"
+
+# Set TMPDIR if /tmp is mounted noexec
+tmp=$(mktemp -d "$argv0".XXXXXXXX)
+
+msg() {
+    printf '%s\' "$@"
+}
+
+err() {
+    printf '%s\' "$@" >&2
+}
+
+release_parse() {
+    awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
+}
+
+release_latest() {
+    curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
+}
+
+import_gpgkey() {
+    msg "Importing key with ID: $1"
+    gpg --verbose --keyserver keys.gnupg.net --recv-keys "$1"
+}
+
+verify_sig() {
+    msg "Verifying signature of: ${1%%.sig}"
+    gpg --verbose --verify "$1"
+}
+
+fetch_and_verify() {
+    curl --retry 5 -LO "$1"
+    curl --retry 5 -LO "$1".sig
+
+    import_gpgkey 54A2B8892CC3D6A597B92B6C210627AABA709FE1
+    verify_sig "${1##*/}".sig
+}
+
+build_libsodium() {
+    tar -xzvf "$1" --strip-components=1
+    ./configure --enable-minimal
+    make
+    make check
+}
+
+build_dnscrypt() {
+    tar -xzvf "$1" --strip-components=1
+    ./configure
+    make
+}
+
+build_release() {
+    #global startdir build_ver
+    local build build_url startdir srcdir pkgdir
+
+    case "$1" in
+	libsodium)
+	    build=build_libsodium
+	    build_url='https://download.libsodium.org/libsodium/releases'
+	    build_ver=$(release_latest libsodium "$build_url")
+	    srcdir="$startdir"/libsodium-src
+	    pkgdir="$startdir"/libsodium-pkg
+	    ;;
+	dnscrypt)
+	    build=build_dnscrypt
+	    build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+	    build_ver=$(release_latest dnscrypt-proxy "$build_url")
+	    srcdir="$startdir"/dnscrypt-src
+	    pkgdir="$startdir"/dnscrypt-pkg
+	    ;;
+	*)
+	    err 'No valid build selected'
+	    exit 1 ;;	    
+    esac ;;
+    
+    cd "$srcdir"
+    fetch_and_verify "$build_url/$build_ver"
+
+    #export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
+    "$build" "$build_ver"
+
+    mkdir -p "$pkgdir"
+    fakeroot -- make DESTDIR="$pkgdir" install
+
+    cd "$pkgdir"
+    fakeroot -- env LANG=C bsdtar -cf - ./* | xz -c -z - > "$startdir/package-$build_ver"
+}
+
+get_location() {
+    # util-linux whereis always returns 0
+    whereis "$1" | awk '{print $2}'
+}
+
+trap 'rm -rf "$tmp"' EXIT
+
+if ((UID)); then
+    err 'This script should not be run as root.'
+    exit 1
+fi
+
+if ! sudo -v; then
+    err 'Please configure sudo before using this script.'
+    exit 1
+fi
+
+if [[ -f /etc/debian_version ]]; then
+    sudo apt-get update
+    apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+elif [[ -f /etc/fedora-release ]]; then
+    dnf update
+    dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+elif [[ -f /etc/redhat-release ]]; then
+    yum update
+    yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+elif [[ -f /etc/SuSE-release ]]; then
+    zypper ref
+    zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+else
+    err 'No supported distribution found'
+    exit 1
+fi
+
+if [[ $(get_location dnscrypt-proxy) ]]; then
+   dnscryptinst=1
+fi
+
+if [[ $(get_location libsodium) ]]; then
+    lsodiuminst=1
+fi
+
+if [[ -e /etc/init.d/dnscrypt-proxy ]]; then
+    dnscryptconf=1
+fi
+
+umask 0022
+cd "$tmp"
+
+if ((!lsodiuminst)); then
+    build_release --libsodium
+    sudo tar --no-overwrite-dir -xvf "package-libsodium-$build_ver.tar.gz" -C /
+    sudo ldconfig
+fi
+
+if ((!dnscryptinst)); then
+    build_release --dnscrypt-proxy
+    sudo tar --no-overwrite-dir -xvf "package-dnscrypt-$build_ver.tar.gz" -C /
+    sudo useradd --system -d /etc/dnscrypt/run -s /bin/nologin dnscrypt
+fi
