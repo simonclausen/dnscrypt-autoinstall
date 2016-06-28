@@ -30,7 +30,7 @@ release_latest() {
 
 import_gpgkey() {
     msg "Importing key with ID: $1"
-    gpg --verbose --keyserver keys.gnupg.net --recv-keys "$1"
+    gpg --verbose --recv-keys "$1"
 }
 
 verify_sig() {
@@ -46,33 +46,20 @@ fetch_and_verify() {
     verify_sig "${1##*/}".sig
 }
 
-build_libsodium() {
-    tar -xzvf "$1" --strip-components=1
-    ./configure --enable-minimal
-    make
-    make check
-}
-
-build_dnscrypt() {
-    tar -xzvf "$1" --strip-components=1
-    ./configure
-    make
-}
-
 build_release() {
     #global startdir build_ver
-    local build build_url startdir srcdir pkgdir
+    local build build_url startdir srcdir pkgdir build_libsodium=0 build_dnscrypt=0
 
     case "$1" in
 	libsodium)
-	    build=build_libsodium
+	    build_libsodium=1
 	    build_url='https://download.libsodium.org/libsodium/releases'
 	    build_ver=$(release_latest libsodium "$build_url")
 	    srcdir="$startdir"/libsodium-src
 	    pkgdir="$startdir"/libsodium-pkg
 	    ;;
 	dnscrypt)
-	    build=build_dnscrypt
+	    build_dnscrypt=1
 	    build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	    build_ver=$(release_latest dnscrypt-proxy "$build_url")
 	    srcdir="$startdir"/dnscrypt-src
@@ -85,15 +72,22 @@ build_release() {
     
     cd "$srcdir"
     fetch_and_verify "$build_url/$build_ver"
+    tar -xzvf "$build_ver" --strip-components=1
 
-    #export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib
-    "$build" "$build_ver"
+    if ((build_libsodium)); then
+	./configure --enable-minimal
+	make
+	make check
+    elif ((build_dnscrypt)); then
+	./configure
+	make
+    fi
 
     mkdir -p "$pkgdir"
     fakeroot -- make DESTDIR="$pkgdir" install
 
     cd "$pkgdir"
-    fakeroot -- env LANG=C bsdtar -cf - ./* | xz -c -z - > "$startdir/package-$build_ver"
+    fakeroot -- env LANG=C tar -cf - ./* | xz -c -z - > "$startdir/package-$build_ver"
 }
 
 get_location() {
@@ -103,7 +97,7 @@ get_location() {
 
 trap 'rm -rf "$tmp"' EXIT
 
-if ((UID)); then
+if ((!UID)); then
     err 'This script should not be run as root.'
     exit 1
 fi
