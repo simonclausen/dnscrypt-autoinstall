@@ -13,11 +13,11 @@ startdir="$PWD"
 tmp=$(mktemp -d "$argv0".XXXXXXXX)
 
 msg() {
-    printf '%s\' "$@"
+    printf '%b\n' "$@"
 }
 
 err() {
-    printf '%s\' "$@" >&2
+    printf '%b\n' "$@" >&2
 }
 
 release_parse() {
@@ -81,6 +81,8 @@ build_release() {
     elif ((build_dnscrypt)); then
 	./configure
 	make
+    else
+	exit 1
     fi
 
     mkdir -p "$pkgdir"
@@ -93,6 +95,26 @@ build_release() {
 get_location() {
     # util-linux whereis always returns 0
     whereis "$1" | awk '{print $2}'
+}
+
+config_interface() {
+    #global whichresolver
+    local resolver_list=https://raw.githubusercontent.com/jedisct1/dnscrypt-proxy/master/dnscrypt-resolvers.csv
+
+    # Fall back to locally installed .csv
+    if fetch_and_verify "$resolver_list"; then
+	resolver_list=./dnscrypt-resolvers.csv
+    else
+	resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+    fi
+
+    # Match line numbers to Github preview
+    msg '\nWhich DNSCrypt service would you like to use?\n'
+    select whichresolver in $(awk -F',' '{print $1}') "$resolver_list"; do
+	if [[ $provider != Name ]]; then
+	    break
+	fi
+    done
 }
 
 trap 'rm -rf "$tmp"' EXIT
