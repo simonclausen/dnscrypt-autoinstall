@@ -147,12 +147,12 @@ cd "$tmp"
 
 if ((!lsodiuminst)); then
     build_release --libsodium
-    sudo tar --no-overwrite-dir -xvf "package-libsodium-$build_ver.tar.gz" -C /
+    sudo tar --no-overwrite-dir -xvf "package-$build_ver" -C /
     sudo ldconfig
 fi
 
 if ((!dnscryptinst)); then
     build_release --dnscrypt-proxy
-    sudo tar --no-overwrite-dir -xvf "package-dnscrypt-$build_ver.tar.gz" -C /
+    sudo tar --no-overwrite-dir -xvf "package-$build_ver" -C /
     sudo useradd --system -d /etc/dnscrypt/run -s /bin/nologin dnscrypt
 fi
