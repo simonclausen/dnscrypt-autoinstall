@@ -68,7 +68,7 @@ build_release() {
 	*)
 	    err 'No valid build selected'
 	    exit 1 ;;	    
-    esac ;;
+    esac
     
     cd "$srcdir"
     fetch_and_verify "$build_url/$build_ver"
