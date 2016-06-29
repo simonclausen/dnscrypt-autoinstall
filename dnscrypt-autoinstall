@@ -47,19 +47,19 @@ fetch_and_verify() {
     verify_sig "${1##*/}".sig
 }
 
-install_depends() {  
+install_depends() {
     if [[ -f /etc/debian_version ]]; then
 	sudo apt-get update
-	apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+	sudo apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
     elif [[ -f /etc/fedora-release ]]; then
-	dnf update
-	dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+	sudo dnf update
+	sudo dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
     elif [[ -f /etc/redhat-release ]]; then
-	yum update
-	yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+	sudo yum update
+	sudo yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
     elif [[ -f /etc/SuSE-release ]]; then
-	zypper ref
-	zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+	sudo zypper ref
+	sudo zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
     else
 	err 'No supported distribution found'
 	exit 1
@@ -98,9 +98,9 @@ build_release() {
 	    ;;
 	*)
 	    err 'No valid build selected'
-	    exit 1 ;;	    
+	    exit 1 ;;
     esac
-    
+
     cd "$srcdir"
     fetch_and_verify "$build_url/$build_ver"
     tar -xzvf "$build_ver" --strip-components=1
