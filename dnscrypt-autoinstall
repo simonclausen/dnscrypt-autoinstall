@@ -8,7 +8,6 @@ libsodiuminst=0
 dnscryptconf=0
 whichresolver=dnscrypteu
 cachedir="/var/cache/$argv0"
-startdir="$PWD"
 
 # Set TMPDIR if /tmp is mounted noexec
 tmp=$(mktemp -d "$argv0".XXXXXXXX)
@@ -79,28 +78,29 @@ make_dnscrypt() {
 
 build_release() {
     #global startdir build_ver
-    local build build_url startdir srcdir pkgdir build_libsodium=0 build_dnscrypt=0
+    local build build_url srcdir pkgdir build_libsodium=0 build_dnscrypt=0
 
     case "$1" in
 	libsodium)
 	    build_libsodium=1
 	    build_url='https://download.libsodium.org/libsodium/releases'
 	    build_ver=$(release_latest libsodium "$build_url")
-	    srcdir="$startdir"/libsodium-src
-	    pkgdir="$startdir"/libsodium-pkg
+	    srcdir="$PWD"/libsodium-src
+	    pkgdir="$PWD"/libsodium-pkg
 	    ;;
 	dnscrypt)
 	    build_dnscrypt=1
 	    build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	    build_ver=$(release_latest dnscrypt-proxy "$build_url")
-	    srcdir="$startdir"/dnscrypt-src
-	    pkgdir="$startdir"/dnscrypt-pkg
+	    srcdir="$PWD"/dnscrypt-src
+	    pkgdir="$PWD"/dnscrypt-pkg
 	    ;;
 	*)
 	    err 'No valid build selected'
 	    exit 1 ;;
     esac
 
+    mkdir -p "$srcdir"
     cd "$srcdir"
     fetch_and_verify "$build_url/$build_ver"
     tar -xzvf "$build_ver" --strip-components=1
@@ -142,10 +142,10 @@ config_interface() {
 Which DNSCrypt service would you like to use?
 
 EOF
-    select whichresolver in $(awk -F',' '{print $1}') "$resolver_list"; do
-	if [[ $provider != Name ]]; then
-	    break
-	fi
+    local IFS=$'\n'
+    select description in $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
+	whichresolver=$(awk '{print $1}' <<< "$description")
+	break
     done
 }
 
