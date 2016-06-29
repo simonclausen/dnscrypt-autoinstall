@@ -7,6 +7,7 @@ dnscryptinst=0
 libsodiuminst=0
 dnscryptconf=0
 whichresolver=dnscrypteu
+cachedir="/var/cache/$argv0"
 startdir="$PWD"
 
 # Set TMPDIR if /tmp is mounted noexec
@@ -99,10 +100,10 @@ get_location() {
 
 config_interface() {
     #global whichresolver
-    local resolver_list=https://raw.githubusercontent.com/jedisct1/dnscrypt-proxy/master/dnscrypt-resolvers.csv
+    local resolver_url=https://raw.githubusercontent.com/jedisct1/dnscrypt-proxy/master
 
     # Fall back to locally installed .csv
-    if fetch_and_verify "$resolver_list"; then
+    if fetch_and_verify "$resolver_url/dnscrypt-resolvers.csv"; then
 	resolver_list=./dnscrypt-resolvers.csv
     else
 	resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
@@ -159,16 +160,19 @@ if [[ -e /etc/init.d/dnscrypt-proxy ]]; then
 fi
 
 umask 0022
+mkdir -p "$cachedir"
 cd "$tmp"
 
 if ((!lsodiuminst)); then
     build_release --libsodium
-    sudo tar --no-overwrite-dir -xvf "package-$build_ver" -C /
+    sudo mv "package-$build_ver" "$cachedir/"
+    sudo tar --no-overwrite-dir -xvf "$cachedir/package-$build_ver" -C /
     sudo ldconfig
 fi
 
 if ((!dnscryptinst)); then
     build_release --dnscrypt-proxy
-    sudo tar --no-overwrite-dir -xvf "package-$build_ver" -C /
+    sudo mv "package-$build_ver" "$cachedir/"
+    sudo tar --no-overwrite-dir -xvf "$cachedir/package-$build_ver" -C /
     sudo useradd --system -d /etc/dnscrypt/run -s /bin/nologin dnscrypt
 fi
