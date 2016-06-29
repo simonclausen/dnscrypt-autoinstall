@@ -118,6 +118,17 @@ config_interface() {
     done
 }
 
+config_resolv() {
+    resolv_conf=$(realpath -e /etc/resolv.conf)
+
+    sudo chattr -i "$resolv_conf"
+    sudo tee "$resolv_conf" <<EOF
+nameserver 127.0.0.1
+nameserver 127.0.0.2
+EOF
+    sudo chattr +i "$resolv_conf"
+}
+
 trap 'rm -rf "$tmp"' EXIT
 
 if ((!UID)); then
