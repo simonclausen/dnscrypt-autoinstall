@@ -14,11 +14,11 @@ startdir="$PWD"
 tmp=$(mktemp -d "$argv0".XXXXXXXX)
 
 msg() {
-    printf '%b\n' "$@"
+    printf '%s\n' "$@"
 }
 
 err() {
-    printf '%b\n' "$@" >&2
+    printf '%s\n' "$@" >&2
 }
 
 release_parse() {
@@ -45,6 +45,36 @@ fetch_and_verify() {
 
     import_gpgkey 54A2B8892CC3D6A597B92B6C210627AABA709FE1
     verify_sig "${1##*/}".sig
+}
+
+install_depends() {  
+    if [[ -f /etc/debian_version ]]; then
+	sudo apt-get update
+	apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+    elif [[ -f /etc/fedora-release ]]; then
+	dnf update
+	dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+    elif [[ -f /etc/redhat-release ]]; then
+	yum update
+	yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+    elif [[ -f /etc/SuSE-release ]]; then
+	zypper ref
+	zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+    else
+	err 'No supported distribution found'
+	exit 1
+    fi
+}
+
+make_libsodium() {
+    ./configure --enable-minimal
+    make
+    make check
+}
+
+make_dnscrypt() {
+    ./configure
+    make
 }
 
 build_release() {
@@ -76,12 +106,9 @@ build_release() {
     tar -xzvf "$build_ver" --strip-components=1
 
     if ((build_libsodium)); then
-	./configure --enable-minimal
-	make
-	make check
+	make_libsodium
     elif ((build_dnscrypt)); then
-	./configure
-	make
+	make_dnscrypt
     else
 	exit 1
     fi
@@ -110,7 +137,11 @@ config_interface() {
     fi
 
     # Match line numbers to Github preview
-    msg '\nWhich DNSCrypt service would you like to use?\n'
+    cat <<EOF
+
+Which DNSCrypt service would you like to use?
+
+EOF
     select whichresolver in $(awk -F',' '{print $1}') "$resolver_list"; do
 	if [[ $provider != Name ]]; then
 	    break
@@ -120,13 +151,18 @@ config_interface() {
 
 config_resolv() {
     resolv_conf=$(realpath -e /etc/resolv.conf)
+    local resolv_conf
 
-    sudo chattr -i "$resolv_conf"
-    sudo tee "$resolv_conf" <<EOF
+    sudo chattr -V -i "$resolv_conf"
+    sudo tee "$resolv_conf" >/dev/null <<EOF
 nameserver 127.0.0.1
 nameserver 127.0.0.2
 EOF
-    sudo chattr +i "$resolv_conf"
+    sudo chattr -V +i "$resolv_conf"
+}
+
+check_existing_dns() {
+    nc -z -w1 127.0.0.1 53
 }
 
 trap 'rm -rf "$tmp"' EXIT
@@ -141,49 +177,71 @@ if ! sudo -v; then
     exit 1
 fi
 
-if [[ -f /etc/debian_version ]]; then
-    sudo apt-get update
-    apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
-elif [[ -f /etc/fedora-release ]]; then
-    dnf update
-    dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
-elif [[ -f /etc/redhat-release ]]; then
-    yum update
-    yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-elif [[ -f /etc/SuSE-release ]]; then
-    zypper ref
-    zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
-else
-    err 'No supported distribution found'
-    exit 1
-fi
-
 if [[ $(get_location dnscrypt-proxy) ]]; then
-   dnscryptinst=1
+    dnscryptinst=1
 fi
 
 if [[ $(get_location libsodium) ]]; then
     lsodiuminst=1
 fi
 
-if [[ -e /etc/init.d/dnscrypt-proxy ]]; then
+if [[ -e /etc/systemd/system/$argv0.service ]]; then
     dnscryptconf=1
 fi
 
+if ((dnscryptinst && dnscryptconf)); then
+    cat <<EOF
+
+Welcome to the dnscrypt-autoinstall script.
+
+It seems like DNSCrypt was installed and configured by this script.
+
+What would you like to do?
+
+1) Configure another DNSCrypt service or turn off DNSCrypt.
+2) Uninstall DNSCrypt and remove the auto-startup configuration.
+3) Exit.
+
+EOF
+    read -p 'Select an option [1-3]: '
+
+    case "$REPLY" in
+	1)
+	    config_interface
+	    config_do  # TODO
+	    msg 'Reconfiguration done. Quitting.'
+	    exit ;;
+	2)
+	    config_del # TODO
+	    msg 'DNSCrypt has been removed. Quitting.'
+	    exit ;;
+	3)
+	    msg 'Bye!'
+	    exit ;;
+    esac
+elif ((dnscryptinst)); then
+    exit 1 # TODO
+elif check_existing_dns; then
+    exit 1 # TODO
+else
+    exit 0 # TODO
+fi
+
 umask 0022
-mkdir -p "$cachedir"
+sudo mkdir -p "$cachedir"
 cd "$tmp"
 
 if ((!lsodiuminst)); then
-    build_release --libsodium
+    build_release libsodium
     sudo mv "package-$build_ver" "$cachedir/"
     sudo tar --no-overwrite-dir -xvf "$cachedir/package-$build_ver" -C /
     sudo ldconfig
 fi
 
 if ((!dnscryptinst)); then
-    build_release --dnscrypt-proxy
+    build_release dnscrypt-proxy
     sudo mv "package-$build_ver" "$cachedir/"
     sudo tar --no-overwrite-dir -xvf "$cachedir/package-$build_ver" -C /
-    sudo useradd --system -d /etc/dnscrypt/run -s /bin/nologin dnscrypt
+    sudo useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
+    sudo install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
 fi
