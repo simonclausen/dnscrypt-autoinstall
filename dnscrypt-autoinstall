@@ -126,14 +126,12 @@ get_location() {
 }
 
 config_interface() {
-    #global whichresolver
     local resolver_url=https://raw.githubusercontent.com/jedisct1/dnscrypt-proxy/master
+    local resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
 
     # Fall back to locally installed .csv
     if fetch_and_verify "$resolver_url/dnscrypt-resolvers.csv"; then
 	resolver_list=./dnscrypt-resolvers.csv
-    else
-	resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
     fi
 
     # Match line numbers to Github preview
@@ -144,7 +142,7 @@ Which DNSCrypt service would you like to use?
 EOF
     local IFS=$'\n'
     select description in $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
-	whichresolver=$(awk '{print $1}' <<< "$description")
+	awk '{print $1}' <<< "$description"
 	break
     done
 }
