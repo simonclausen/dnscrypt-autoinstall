@@ -19,75 +19,81 @@ err() {
 }
 
 build_release() {
-    # XXX: export functions, error checking, files
+    # XXX: export functions, files
     case "$1" in
 	libsodium)
-	    declare -rx _dnscrypt_build_dir="$2"
-	    declare -rx _dnscrypt_build_libsodium=1 ;;
+	    declare -rx _build_dir="$2"
+	    declare -rx _build_libsodium=1 ;;
 	dnscrypt)
-	    declare -rx _dnscrypt_build_dir="$2"
-	    declare -rx _dnscrypt_build_proxy=1 ;;
+	    declare -rx _build_dir="$2"
+	    declare -rx _build_proxy=1 ;;
 	*)
 	    err 'Invalid build type'
 	    exit 1 ;;
     esac
 
-    su dnscrypt-build
-    umask 0022
-    set -e
+    su dnscrypt-build <<EOF
+set -e
+umask 0022
 
-    release_parse() {
-	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
-    }
-
-    release_latest() {
-	curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
-    }
-
-    if ((_dnscrypt_build_libsodium)); then
-	build_url='https://download.libsodium.org/libsodium/releases'
-	build_ver=$(release_latest libsodium "$build_url")
-	srcdir="$_dnscrypt_build_dir"/libsodium-src
-	pkgdir="$_dnscrypt_build_dir"/libsodium-pkg
-	gpgdir="$_dnscrypt_build_dir"/gnupg
-    elif ((_dnscrypt_build_proxy)); then
-	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
-	build_ver=$(release_latest dnscrypt-proxy "$build_url")
-	srcdir="$_dnscrypt_build_dir"/dnscrypt-src
-	pkgdir="$_dnscrypt_build_dir"/dnscrypt-pkg
-	gpgdir="$_dnscrypt_build_dir"/gnupg
-    fi
-
-    mkdir -p "$srcdir"
-    cd "$srcdir"
-    curl --retry 5 -LO "$build_url/$build_ver"
-    curl --retry 5 -LO "$build_url/$build_ver".sig
-
-    mkdir -p "$gpgdir"
-    gpg --homedir="$gpgdir" --verbose --recv-keys 54A2B8892CC3D6A597B92B6C210627AABA709FE1
-    gpg --homedir="$gpgdir" --verbose --verify "$build_ver".sig
-
-    tar -xzvf "$build_ver" --strip-components=1
-
-    if ((_dnscrypt_build_libsodium)); then
-	./configure --enable-minimal
-	make
-	make check
-    elif ((_dnscrypt_build_proxy)); then
-	./configure
-	make
-    fi
-
-    mkdir -p "$pkgdir"
-    fakeroot -- make DESTDIR="$pkgdir" install
-
-    # XXX: Strip tar.gz to allow changing archive format
-    cd "$pkgdir"
-    fakeroot -- env LANG=C tar -cf - ./* | gz -c - > "$_dnscrypt_build_dir/package-$build_ver"
-
-    printf '%s' "package-$build_ver" > "$_dnscrypt_build_dir/latest"
-    exit 0
+release_parse() {
+    awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
+
+release_latest() {
+    curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
+}
+
+if ((_build_libsodium)); then
+    build_url='https://download.libsodium.org/libsodium/releases'
+    build_tgz=$(release_latest libsodium "$build_url")
+    srcdir="$_build_dir"/libsodium-src
+    pkgdir="$_build_dir"/libsodium-pkg
+    gpgdir="$_build_dir"/gnupg
+elif ((_build_proxy)); then
+    build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+    build_tgz=$(release_latest dnscrypt-proxy "$build_url")
+    srcdir="$_build_dir"/dnscrypt-src
+    pkgdir="$_build_dir"/dnscrypt-pkg
+    gpgdir="$_build_dir"/gnupg
+fi
+
+mkdir -p "$srcdir"
+cd "$srcdir"
+curl --retry 5 -LO "$build_url/$build_tgz"
+curl --retry 5 -LO "$build_url/$build_tgz".sig
+
+mkdir -p "$gpgdir"
+gpg --homedir="$gpgdir" --verbose --recv-keys 54A2B8892CC3D6A597B92B6C210627AABA709FE1
+gpg --homedir="$gpgdir" --verbose --verify "$build_tgz".sig
+
+tar -xzvf "$build_tgz" --strip-components=1
+
+if ((_build_libsodium)); then
+    ./configure --enable-minimal
+    make
+    make check
+elif ((_build_proxy)); then
+    ./configure
+    make
+fi
+
+mkdir -p "$pkgdir"
+fakeroot -- make DESTDIR="$pkgdir" install
+
+cd "$pkgdir"
+fakeroot -- env LANG=C tar -cf - ./* | gz -c - > "$_build_dir/package-$build_tgz"
+
+printf '%s' "package-$build_tgz" > "$_build_dir/latest"
+exit 0
+
+EOF
+    if (($?)); then
+	err "Build of $1 failed."
+	exit 1
+    fi
+}
+
 
 install_depends() {
     if [[ -f /etc/debian_version ]]; then
