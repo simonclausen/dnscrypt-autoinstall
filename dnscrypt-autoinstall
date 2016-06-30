@@ -22,15 +22,15 @@ build_release() {
     # XXX: export functions
     case "$1" in
 	libsodium)
-	    readonly _build_dir="$2"
-	    readonly _build_libsodium=1 ;;
+	    declare -rx _build=_build_libsodium ;;
 	dnscrypt)
-	    readonly _build_dir="$2"
-	    readonly _build_dnscrypt=1 ;;
+	    declare -rx _build=_build_dnscrypt ;;
 	*)
 	    err 'Invalid build type'
 	    exit 1 ;;
     esac
+
+    declare -rx _build_dir="$2"
 
     su dnscrypt-build <<'EOF'
 set -e
@@ -44,19 +44,22 @@ release_latest() {
     curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
 }
 
-if ((_build_libsodium)); then
-    build_url='https://download.libsodium.org/libsodium/releases'
-    build_tgz=$(release_latest libsodium "$build_url")
-    srcdir="$_build_dir"/libsodium-src
-    pkgdir="$_build_dir"/libsodium-pkg
-    gpgdir="$_build_dir"/gnupg
-elif ((_build_dnscrypt)); then
-    build_url='https://download.dnscrypt.org/dnscrypt-proxy'
-    build_tgz=$(release_latest dnscrypt-proxy "$build_url")
-    srcdir="$_build_dir"/dnscrypt-src
-    pkgdir="$_build_dir"/dnscrypt-pkg
-    gpgdir="$_build_dir"/gnupg
-fi
+case "$_build" in
+    _build_libsodium)
+	build_url='https://download.libsodium.org/libsodium/releases'
+	build_tgz=$(release_latest libsodium "$build_url")
+	srcdir="$_build_dir"/libsodium-src
+	pkgdir="$_build_dir"/libsodium-pkg
+	gpgdir="$_build_dir"/gnupg
+	;;
+    _build_dnscrypt)
+	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+	build_tgz=$(release_latest dnscrypt-proxy "$build_url")
+	srcdir="$_build_dir"/dnscrypt-src
+	pkgdir="$_build_dir"/dnscrypt-pkg
+	gpgdir="$_build_dir"/gnupg
+	;;
+esac
 
 mkdir -p "$srcdir"
 cd "$srcdir"
