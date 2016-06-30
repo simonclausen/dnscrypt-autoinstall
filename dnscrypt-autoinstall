@@ -19,14 +19,14 @@ err() {
 }
 
 build_release() {
-    # XXX: export functions, files
+    # XXX: export functions
     case "$1" in
 	libsodium)
-	    declare -rx _build_dir="$2"
-	    declare -rx _build_libsodium=1 ;;
+	    readonly _build_dir="$2"
+	    readonly _build_libsodium=1 ;;
 	dnscrypt)
-	    declare -rx _build_dir="$2"
-	    declare -rx _build_proxy=1 ;;
+	    readonly _build_dir="$2"
+	    readonly _build_dnscrypt=1 ;;
 	*)
 	    err 'Invalid build type'
 	    exit 1 ;;
@@ -50,7 +50,7 @@ if ((_build_libsodium)); then
     srcdir="$_build_dir"/libsodium-src
     pkgdir="$_build_dir"/libsodium-pkg
     gpgdir="$_build_dir"/gnupg
-elif ((_build_proxy)); then
+elif ((_build_dnscrypt)); then
     build_url='https://download.dnscrypt.org/dnscrypt-proxy'
     build_tgz=$(release_latest dnscrypt-proxy "$build_url")
     srcdir="$_build_dir"/dnscrypt-src
@@ -73,7 +73,7 @@ if ((_build_libsodium)); then
     ./configure --enable-minimal
     make
     make check
-elif ((_build_proxy)); then
+elif ((_build_dnscrypt)); then
     ./configure
     make
 fi
@@ -129,7 +129,6 @@ config_interface() {
 	resolver_list=./dnscrypt-resolvers.csv
     fi
 
-    # Match line numbers to Github preview
     cat <<EOF
 
 Which DNSCrypt service would you like to use?
