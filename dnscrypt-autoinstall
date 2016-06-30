@@ -90,7 +90,6 @@ EOF
     fi
 }
 
-
 install_depends() {
     if [[ -f /etc/debian_version ]]; then
 	apt-get update
@@ -197,35 +196,88 @@ EOF
 	    exit ;;
     esac
 elif ((dnscryptinst)); then
-    exit 1 # TODO
+    cat <<EOF    
+
+Error!
+    
+It seems like DNSCrypt is already installed but
+not configured by this script.
+    
+Remove DNSCrypt and it's configuration completely
+from the system and run this script again.
+    
+To uninstall DNSCrypt, try running this script
+again with the 'forcedel' argument. For example:
+    ./dnscrypt-autoinstall.sh forcedel
+    
+Quitting.
+EOF
+    exit 1
 elif nc -z -w1 127.0.0.1 53; then
-    exit 1 # TODO
+    cat <<EOF
+Error!
+    
+It looks like there is already a DNS server
+or forwarder installed and listening on 127.0.0.1.
+
+To use DNSCypt, you need to either uninstall it
+or make it listen on another IP than 127.0.0.1.
+
+To uninstall DNSCrypt, try running this script
+again with the 'forcedel' argument. For example:
+    ./dnscrypt-autoinstall.sh forcedel
+
+Quitting.
+EOF
+    exit 1
 else
-    exit 0 # TODO
-fi
+    cat <<EOF
 
-if ! getent passwd dnscrypt-build; then
-    useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
-    passwd -q -l dnscrypt-build
-fi
+Welcome to the dnscrypt-autoinstall script.
 
-install -d "$cachedir"
-install -d "$cachedir"/build -o dnscrypt-build -g dnscrypt-build -m 700
-install_depends
+This will install DNSCrypt and autoconfigure it to run as a daemon at start up.
 
-if ((!lsodiuminst)); then
-    build_release libsodium "$cachedir"/build
-    read -r pkgver < "$cachedir"/build/latest
+EOF
+    read -n1 -r -p "Press any key to continue..."
+    clear
+    cat <<EOF
 
-    tar --no-overwrite-dir -xvf "$cachedir/$pkgver" -C /
-    ldconfig
-fi
+Would you like to see a list of supported providers?
+EOF
+    read -p "(DNSCrypt.eu is default) [y/n]: " -e -i n SHOWLIST
+    if [[ $SHOWLIST == y ]]; then
+	config_interface
+    fi
 
-if ((!dnscryptinst)); then
+    if ! getent passwd dnscrypt-build; then
+	useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
+	passwd -q -l dnscrypt-build
+    fi
+
+    install -d "$cachedir"
+    install -d "$cachedir"/build -o dnscrypt-build -g dnscrypt-build -m 700
+    install_depends
+
+    if ((!lsodiuminst)); then
+	build_release libsodium "$cachedir"/build
+	read -r pkgver < "$cachedir"/build/latest
+	tar --no-overwrite-dir -xvf "$cachedir/$pkgver" -C /
+
+	ldconfig
+    fi
+
     build_release dnscrypt-proxy "$cachedir"/build
-    read -r pkgver < "$cachedir"/build/latest
-
+    read -r pkgver < "$cachedir"/build/latest    
     tar --no-overwrite-dir -xvf "$cachedir/$pkgver" -C /
+
     useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
     install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
+
+    # cp -p /etc/resolv.conf /etc/resolv.conf-dnscryptbak
+    # config_do
+    cat <<EOF
+
+DNSCrypt is now installed.
+You can run this script again to reconfigure, turn off, or uninstall it.
+EOF
 fi
