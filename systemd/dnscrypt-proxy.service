@@ -8,12 +8,10 @@ Wants=network.target dnscrypt-proxy-backup.service
 [Service]
 EnvironmentFile=/etc/conf.d/dnscrypt-config
 ExecStart=/usr/bin/dnscrypt-proxy \
-	--local-address=${DNSCRYPT_LOCALIP}:${DNSCRYPT_LOCALPORT} \
-	--resolver-address=${DNSCRYPT_RESOLVERIP}:${DNSCRYPT_RESOLVERPORT} \
-	--provider-name=${DNSCRYPT_PROVIDER_NAME} \
-	--provider-key=${DNSCRYPT_PROVIDER_KEY} \
-	--user=${DNSCRYPT_USER} \
-	--ephemeral-keys
+	 --user=${DNSCRYPT_USER} \
+	 --ephemeral-keys \
+	 --resolver_name=${DNSCRYPT_RESOLVER} \
+	 --local-address=${DNSCRYPT_LOCALIP}:${DNSCRYPT_LOCALPORT}
 Restart=on-abort
 
 [Install]

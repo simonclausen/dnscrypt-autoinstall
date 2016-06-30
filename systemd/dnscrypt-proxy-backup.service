@@ -9,12 +9,10 @@ PartOf=dnscrypt-proxy.service
 [Service]
 EnvironmentFile=/etc/conf.d/dnscrypt-config
 ExecStart=/usr/bin/dnscrypt-proxy \
-	--local-address=${DNSCRYPT_LOCALIP2}:${DNSCRYPT_LOCALPORT} \
-	--resolver-address=${DNSCRYPT_RESOLVERIP2}:${DNSCRYPT_RESOLVERPORT} \
-	--provider-name=${DNSCRYPT_PROVIDER_NAME2} \
-	--provider-key=${DNSCRYPT_PROVIDER_KEY2} \
-	--user=${DNSCRYPT_USER} \
-	--ephemeral-keys
+	 --user=${DNSCRYPT_USER} \
+	 --ephemeral-keys \
+	 --resolver_name=${DNSCRYPT_RESOLVER2} \
+	 --local-address=${DNSCRYPT_LOCALIP2}:${DNSCRYPT_LOCALPORT2}
 Restart=on-abort
 
 [Install]
