@@ -18,24 +18,6 @@ err() {
     printf '%s\n' "$@" >&2
 }
 
-build_release() {
-    # XXX: export functions
-    case "$1" in
-	libsodium)
-	    declare -rx _build=_build_libsodium ;;
-	dnscrypt)
-	    declare -rx _build=_build_dnscrypt ;;
-	*)
-	    err 'Invalid build type'
-	    exit 1 ;;
-    esac
-
-    declare -rx _build_dir="$2"
-
-    su dnscrypt-build <<'EOF'
-set -e
-umask 0022
-
 release_parse() {
     awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
@@ -44,20 +26,28 @@ release_latest() {
     curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
 }
 
-case "$_build" in
-    _build_libsodium)
+build_release() {
+    declare -rx user_build="$1" startdir="$2"
+    declare -fx release_parse release_latest
+
+    su dnscrypt-build <<'EOF'
+set -e
+umask 0022
+
+case "$user_build" in
+    libsodium)
 	build_url='https://download.libsodium.org/libsodium/releases'
 	build_tgz=$(release_latest libsodium "$build_url")
-	srcdir="$_build_dir"/libsodium-src
-	pkgdir="$_build_dir"/libsodium-pkg
-	gpgdir="$_build_dir"/gnupg
+	srcdir="$startdir"/libsodium-src
+	pkgdir="$startdir"/libsodium-pkg
+	gpgdir="$startdir"/gnupg
 	;;
-    _build_dnscrypt)
+    dnscrypt)
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	build_tgz=$(release_latest dnscrypt-proxy "$build_url")
-	srcdir="$_build_dir"/dnscrypt-src
-	pkgdir="$_build_dir"/dnscrypt-pkg
-	gpgdir="$_build_dir"/gnupg
+	srcdir="$startdir"/dnscrypt-src
+	pkgdir="$startdir"/dnscrypt-pkg
+	gpgdir="$startdir"/gnupg
 	;;
 esac
 
@@ -72,22 +62,25 @@ gpg --homedir="$gpgdir" --verbose --verify "$build_tgz".sig
 
 tar -xzvf "$build_tgz" --strip-components=1
 
-if ((_build_libsodium)); then
-    ./configure --enable-minimal
-    make
-    make check
-elif ((_build_dnscrypt)); then
-    ./configure
-    make
-fi
+case "$user_build" in
+    libsodium)
+	./configure --enable-minimal
+	make
+	make check
+	;;
+    dnscrypt)
+	./configure
+	make
+	;;
+esac
 
 mkdir -p "$pkgdir"
 fakeroot -- make DESTDIR="$pkgdir" install
 
 cd "$pkgdir"
-fakeroot -- env LANG=C tar -cf - ./* | gz -c - > "$_build_dir/package-$build_tgz"
+fakeroot -- env LANG=C tar -cf - ./* | gz -c - > "$startdir/package-$build_tgz"
 
-printf '%s' "package-$build_tgz" > "$_build_dir/latest"
+printf '%s' "package-$build_tgz" > "$startdir/latest"
 exit 0
 
 EOF
