@@ -1,13 +1,12 @@
 #!/bin/bash -
-PATH=/usr/local/bin:/usr/bin
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=dnscrypt-autoinstall
 dnscryptinst=0
-libsodiuminst=0
+lsodiuminst=0
 dnscryptconf=0
-whichresolver=dnscrypteu
 cachedir="/var/cache/$argv0"
 
 msg() {
@@ -42,13 +41,16 @@ case "$user_build" in
 	pkgdir="$startdir"/libsodium-pkg
 	gpgdir="$startdir"/gnupg
 	;;
-    dnscrypt)
+    dnscrypt-proxy)
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	build_tgz=$(release_latest dnscrypt-proxy "$build_url")
 	srcdir="$startdir"/dnscrypt-src
 	pkgdir="$startdir"/dnscrypt-pkg
 	gpgdir="$startdir"/gnupg
 	;;
+    *)
+        exit 1
+        ;;
 esac
 
 mkdir -p "$srcdir"
@@ -57,8 +59,9 @@ curl --retry 5 -LO "$build_url/$build_tgz"
 curl --retry 5 -LO "$build_url/$build_tgz".sig
 
 mkdir -p "$gpgdir"
-gpg --homedir="$gpgdir" --verbose --recv-keys 54A2B8892CC3D6A597B92B6C210627AABA709FE1
-gpg --homedir="$gpgdir" --verbose --verify "$build_tgz".sig
+chmod -c 700 "$gpgdir"
+gpg --homedir="$gpgdir" --keyserver keys.gnupg.net --verbose --recv-keys 54A2B8892CC3D6A597B92B6C210627AABA709FE1
+gpg --homedir="$gpgdir" --keyserver keys.gnupg.net --verbose --verify "$build_tgz".sig
 
 tar -xzvf "$build_tgz" --strip-components=1
 
@@ -68,7 +71,7 @@ case "$user_build" in
 	make
 	make check
 	;;
-    dnscrypt)
+    dnscrypt-proxy)
 	./configure
 	make
 	;;
@@ -78,9 +81,9 @@ mkdir -p "$pkgdir"
 fakeroot -- make DESTDIR="$pkgdir" install
 
 cd "$pkgdir"
-fakeroot -- env LANG=C tar -cf - ./* | gz -c - > "$startdir/package-$build_tgz"
+fakeroot -- env LANG=C tar -cf - ./* | gzip -c - > "$startdir/package-$build_tgz"
 
-printf '%s' "package-$build_tgz" > "$startdir/latest"
+printf '%s\n' "package-$build_tgz" > "$startdir/latest"
 exit 0
 
 EOF
@@ -179,7 +182,7 @@ What would you like to do?
 3) Exit.
 
 EOF
-    read -p 'Select an option [1-3]: '
+    read -r -p 'Select an option [1-3]: '
 
     case "$REPLY" in
 	1)
@@ -220,7 +223,7 @@ Error!
 It looks like there is already a DNS server
 or forwarder installed and listening on 127.0.0.1.
 
-To use DNSCypt, you need to either uninstall it
+To use DNSCrypt, you need to either uninstall it
 or make it listen on another IP than 127.0.0.1.
 
 To uninstall DNSCrypt, try running this script
@@ -244,8 +247,8 @@ EOF
 
 Would you like to see a list of supported providers?
 EOF
-    read -p "(DNSCrypt.eu is default) [y/n]: " -e -i n SHOWLIST
-    if [[ $SHOWLIST == y ]]; then
+    read -r -p "(DNSCrypt.eu is default) [y/n]: "
+    if [[ $REPLY == y ]]; then
 	config_interface
     fi
 
@@ -260,15 +263,14 @@ EOF
 
     if ((!lsodiuminst)); then
 	build_release libsodium "$cachedir"/build
-	read -r pkgver < "$cachedir"/build/latest
-	tar --no-overwrite-dir -xvf "$cachedir/$pkgver" -C /
-
+	read -r package < "$cachedir"/build/latest
+	tar --no-overwrite-dir -xvf "$cachedir/build/$package" -C /
 	ldconfig
     fi
 
     build_release dnscrypt-proxy "$cachedir"/build
-    read -r pkgver < "$cachedir"/build/latest    
-    tar --no-overwrite-dir -xvf "$cachedir/$pkgver" -C /
+    read -r package < "$cachedir"/build/latest    
+    tar --no-overwrite-dir -xvf "$cachedir/build/$package" -C /
 
     useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
     install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
