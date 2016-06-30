@@ -32,7 +32,7 @@ build_release() {
 	    exit 1 ;;
     esac
 
-    su dnscrypt-build <<EOF
+    su dnscrypt-build <<'EOF'
 set -e
 umask 0022
 
