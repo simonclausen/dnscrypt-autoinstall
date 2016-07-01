@@ -80,6 +80,15 @@ esac
 mkdir -p "$pkgdir"
 fakeroot -- make DESTDIR="$pkgdir" install
 
+if [[ $user_build == dnscrypt-proxy ]]; then
+    init_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
+    init_path="$pkgdir"/etc/systemd/system
+
+    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy.service -o "$init_path"/dnscrypt-proxy.service
+    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy-backup.service -o "$init_path"/dnscrypt-proxy-backup.service
+    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy.conf -o "$init_path"/dnscrypt-proxy.conf
+fi
+
 cd "$pkgdir"
 fakeroot -- env LANG=C tar -cf - ./* | gzip -c - > "$startdir/package-$build_tgz"
 
@@ -114,6 +123,7 @@ install_depends() {
 
 get_location() {
     # util-linux whereis always returns 0
+    # XXX: Check version of present libraries
     whereis "$1" | awk '{print $2}'
 }
 
@@ -187,7 +197,6 @@ EOF
     case "$REPLY" in
 	1)
 	    config_interface
-	    config_do  # TODO
 	    msg 'Reconfiguration done. Quitting.'
 	    exit ;;
 	2)
@@ -261,7 +270,7 @@ EOF
     install -d "$cachedir"/build -o dnscrypt-build -g dnscrypt-build -m 700
     install_depends
 
-    if ((!lsodiuminst)); then
+    if [[ $(get_location libsodium) ]]; then
 	build_release libsodium "$cachedir"/build
 	read -r package < "$cachedir"/build/latest
 	tar --no-overwrite-dir -xvf "$cachedir/build/$package" -C /
@@ -276,7 +285,6 @@ EOF
     install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
 
     # cp -p /etc/resolv.conf /etc/resolv.conf-dnscryptbak
-    # config_do
     cat <<EOF
 
 DNSCrypt is now installed.
