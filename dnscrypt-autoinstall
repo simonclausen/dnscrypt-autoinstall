@@ -1,5 +1,6 @@
 #!/bin/bash -
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+IFS=$'\t\n'
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
@@ -22,7 +23,7 @@ release_parse() {
 }
 
 release_latest() {
-    curl -sSL --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
+    curl -LsS --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
 }
 
 build_release() {
@@ -72,6 +73,10 @@ case "$user_build" in
 	make check
 	;;
     dnscrypt-proxy)
+	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
+	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.service
+	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy-backup.service
+	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.conf
 	./configure
 	make
 	;;
@@ -80,26 +85,28 @@ esac
 mkdir -p "$pkgdir"
 fakeroot -- make DESTDIR="$pkgdir" install
 
-if [[ $user_build == dnscrypt-proxy ]]; then
-    init_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
-    init_path="$pkgdir"/etc/systemd/system
-
-    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy.service -o "$init_path"/dnscrypt-proxy.service
-    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy-backup.service -o "$init_path"/dnscrypt-proxy-backup.service
-    curl --retry 5 --create-dirs -L "$init_url"/dnscrypt-proxy.conf -o "$init_path"/dnscrypt-proxy.conf
-fi
+case "$user_build" in
+    dnscrypt-proxy)
+	install -Dm644 "$srcdir"/dnscrypt-proxy{,-backup}.service -t "$pkgdir"/etc/systemd/system
+	install -Dm644 "$srcdir"/dnscrypt-proxy.conf -t "$pkgdir"/etc/systemd/system
+	;;
+esac
 
 cd "$pkgdir"
 fakeroot -- env LANG=C tar -cf - ./* | gzip -c - > "$startdir/package-$build_tgz"
 
-printf '%s\n' "package-$build_tgz" > "$startdir/latest"
+printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/latest"
 exit 0
 
 EOF
     if (($?)); then
-	err "Build of $1 failed."
+	err "Build for $1 failed."
 	exit 1
     fi
+}
+
+get_location() {
+    [[ $(whereis "$1" | awk '{print $2}') ]]
 }
 
 install_depends() {
@@ -121,19 +128,19 @@ install_depends() {
     fi
 }
 
-get_location() {
-    # util-linux whereis always returns 0
-    # XXX: Check version of present libraries
-    whereis "$1" | awk '{print $2}'
-}
-
 config_interface() {
-    local resolver_url=https://raw.githubusercontent.com/jedisct1/dnscrypt-proxy/master
-    local resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+    local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
 
-    # Fall back to locally installed .csv
-    # XXX: function removed
-    if fetch_and_verify "$resolver_url/dnscrypt-resolvers.csv"; then
+    # XXX: Verify GPG signature
+    if ! curl --retry 5 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
+	err 'Retrieving resolvers failed. Falling back to installed version.'
+	if [[ -r /usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv ]]; then
+	    resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+	else
+	    err 'Could not read resolver list. Quitting.'
+	    exit 1
+	fi
+    else
 	resolver_list=./dnscrypt-resolvers.csv
     fi
 
@@ -144,9 +151,16 @@ Which DNSCrypt service would you like to use?
 EOF
     local IFS=$'\n'
     select description in $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
-	awk '{print $1}' <<< "$description"
+	resolver_choice=$(awk '{print $1}' <<< "$description")
 	break
     done
+
+    if [[ -f /etc/systemd/system/dnscrypt-proxy.conf ]]; then
+       sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@"
+    fi
+
+    systemctl daemon-reload
+    systemctl restart dnscrypt-proxy.service
 }
 
 config_resolv() {
@@ -161,20 +175,34 @@ EOF
     chattr -V +i "$resolv_conf"
 }
 
+config_del() {
+    if [[ -d $cachedir ]]; then
+	rm -rv "$cachedir"
+    fi
+
+    if getent passwd dnscrypt; then
+	userdel --remove dnscrypt
+    fi
+
+    if getent passwd dnscrypt-build; then
+	userdel --remove dnscrypt-build
+    fi
+}
+
 if ((UID)); then
     err 'This script should be run as root.'
     exit 1
 fi
 
-if [[ $(get_location dnscrypt-proxy) ]]; then
+if get_location dnscrypt-proxy; then
     dnscryptinst=1
 fi
 
-if [[ $(get_location libsodium) ]]; then
+if get_location libsodium; then
     lsodiuminst=1
 fi
 
-if [[ -e /etc/systemd/system/$argv0.service ]]; then
+if [[ -e /etc/systemd/system/dnscrypt-proxy.service ]]; then
     dnscryptconf=1
 fi
 
@@ -200,7 +228,7 @@ EOF
 	    msg 'Reconfiguration done. Quitting.'
 	    exit ;;
 	2)
-	    config_del # TODO
+	    config_del
 	    msg 'DNSCrypt has been removed. Quitting.'
 	    exit ;;
 	3)
@@ -257,9 +285,10 @@ EOF
 Would you like to see a list of supported providers?
 EOF
     read -r -p "(DNSCrypt.eu is default) [y/n]: "
-    if [[ $REPLY == y ]]; then
-	config_interface
-    fi
+
+    case "$REPLY" in
+	[yY]) config_interface ;;
+    esac
 
     if ! getent passwd dnscrypt-build; then
 	useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
@@ -270,19 +299,21 @@ EOF
     install -d "$cachedir"/build -o dnscrypt-build -g dnscrypt-build -m 700
     install_depends
 
-    if [[ $(get_location libsodium) ]]; then
+    if ! get_location libsodium; then
 	build_release libsodium "$cachedir"/build
-	read -r package < "$cachedir"/build/latest
-	tar --no-overwrite-dir -xvf "$cachedir/build/$package" -C /
+	read -r pkg_path < "$cachedir"/build/latest
+	tar --no-overwrite-dir -xvf "$pkg_path" -C /
 	ldconfig
     fi
 
     build_release dnscrypt-proxy "$cachedir"/build
-    read -r package < "$cachedir"/build/latest    
-    tar --no-overwrite-dir -xvf "$cachedir/build/$package" -C /
+    read -r pkg_path < "$cachedir"/build/latest
+    tar --no-overwrite-dir -xvf "$pkg_path" -C /
 
-    useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
-    install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
+    if ! getent passwd dnscrypt; then
+	useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
+	install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
+    fi
 
     # cp -p /etc/resolv.conf /etc/resolv.conf-dnscryptbak
     cat <<EOF
