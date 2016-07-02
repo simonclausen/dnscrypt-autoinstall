@@ -72,7 +72,7 @@ case "$user_build" in
 	make check
 	;;
     dnscrypt-proxy)
-	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
+	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/'
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy-backup.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.conf
@@ -127,7 +127,7 @@ install_depends() {
 
 config_interface() {
     local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
-    local description resolver_choice resolver_list
+    local resolver_list
 
     # XXX: Verify GPG signature
     if ! curl --retry 5 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
@@ -147,14 +147,15 @@ config_interface() {
 Which DNSCrypt service would you like to use?
 
 EOF
-    local IFS=$'\n'
+    local IFS=$'\n' description resolver_choice
     select description in $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
 	resolver_choice=$(awk '{print $1}' <<< "$description")
 	break
     done
 
-    if [[ -f /etc/systemd/system/dnscrypt-proxy.conf ]]; then
-       sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@"
+    local sd_conf=/etc/systemd/system/dnscrypt-proxy.conf
+    if [[ -f $sd_conf ]]; then
+       sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
     fi
 
     systemctl daemon-reload
