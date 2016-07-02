@@ -6,16 +6,12 @@ set -e
 
 argv0=dnscrypt-autoinstall
 cachedir="/var/cache/$argv0"
+
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
 declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 
-msg() {
-    printf '%s\n' "$@"
-}
-
-err() {
-    printf '%s\n' "$@" >&2
-}
+msg() { printf '%s\n' "$@"; }
+err() { printf '%s\n' "$@" >&2; }
 
 release_parse() {
     awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
@@ -44,6 +40,8 @@ case "$user_build" in
     dnscrypt-proxy)
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	build_tgz=$(release_latest dnscrypt-proxy "$build_url")
+	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/'	
+	sd_path=/etc/systemd/system
 	srcdir="$startdir"/dnscrypt-src
 	pkgdir="$startdir"/dnscrypt-pkg
 	gpgdir="$startdir"/gnupg
@@ -52,6 +50,11 @@ case "$user_build" in
         exit 1
         ;;
 esac
+
+if [[ ! $build_tgz ]]; then
+    printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
+    exit 1
+fi
 
 mkdir -p "$srcdir"
 cd "$srcdir"
@@ -72,7 +75,6 @@ case "$user_build" in
 	make check
 	;;
     dnscrypt-proxy)
-	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/'
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy-backup.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.conf
@@ -86,8 +88,8 @@ fakeroot -- make DESTDIR="$pkgdir" install
 
 case "$user_build" in
     dnscrypt-proxy)
-	install -Dm644 "$srcdir"/dnscrypt-proxy{,-backup}.service -t "$pkgdir"/etc/systemd/system
-	install -Dm644 "$srcdir"/dnscrypt-proxy.conf -t "$pkgdir"/etc/systemd/system
+	install -Dm644 "$srcdir"/dnscrypt-proxy{,-backup}.service -t "$pkgdir/$sd_path"
+	install -Dm644 "$srcdir"/dnscrypt-proxy.conf -t "$pkgdir/$sd_path"
 	;;
 esac
 
@@ -106,6 +108,10 @@ EOF
 
 get_location() {
     [[ $(whereis "$1" | awk '{print $2}') ]]
+}
+
+get_sd_service() {
+    [[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
 }
 
 install_depends() {
@@ -154,12 +160,18 @@ EOF
     done
 
     local sd_conf=/etc/systemd/system/dnscrypt-proxy.conf
-    if [[ -f $sd_conf && $resolver_choice != None ]]; then
-       sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
+    if [[ $resolver_choice != None ]]; then
+	if [[ -f $sd_conf ]]; then
+	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
+	    
+	    systemctl daemon-reload
+	    systemctl enable dnscrypt-proxy.service
+	    systemctl restart dnscrypt-proxy.service
+	else
+	    err 'Configuration file not found. Qutting.'
+	    exit 1
+	fi
     fi
-
-    systemctl daemon-reload
-    systemctl restart dnscrypt-proxy.service
 }
 
 config_resolv() {
@@ -228,7 +240,7 @@ if get_location libsodium; then
     lsodiuminst=1
 fi
 
-if [[ -e /etc/systemd/system/dnscrypt-proxy.service ]]; then
+if get_sd_service dnscrypt-proxy.service; then
     dnscryptconf=1
 fi
 
@@ -306,15 +318,6 @@ This will install DNSCrypt and autoconfigure it to run as a daemon at start up.
 EOF
     read -n1 -r -p "Press any key to continue..."
     clear
-    cat <<EOF
-
-Would you like to see a list of supported providers?
-EOF
-    read -r -p "(DNSCrypt.eu is default) [y/n]: "
-
-    case "$REPLY" in
-	[yY]) config_interface ;;
-    esac
 
     if ! getent passwd dnscrypt-build; then
 	useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
@@ -328,12 +331,14 @@ EOF
     if ! get_location libsodium; then
 	build_release libsodium "$cachedir"/build
 	read -r pkg_path < "$cachedir"/build/latest
+
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
 	ldconfig
     fi
 
     build_release dnscrypt-proxy "$cachedir"/build
     read -r pkg_path < "$cachedir"/build/latest
+
     tar --no-overwrite-dir -xvf "$pkg_path" -C /
 
     if ! getent passwd dnscrypt; then
@@ -341,10 +346,20 @@ EOF
 	install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
     fi
 
-    # cp -p /etc/resolv.conf /etc/resolv.conf-dnscryptbak
     cat <<EOF
 
 DNSCrypt is now installed.
+
+Would you like to see a list of supported providers?
+EOF
+    read -r -p "(DNSCrypt.eu is default) [y/n]: "
+
+    case "$REPLY" in
+	[yY]) config_interface ;;
+    esac
+
+    cat <<EOF
+
 You can run this script again to reconfigure, turn off, or uninstall it.
 EOF
 fi
