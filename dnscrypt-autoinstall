@@ -110,21 +110,18 @@ get_location() {
 }
 
 install_depends() {
-    if [[ -f /etc/debian_version ]]; then
+    if ((debian_release)); then
 	apt-get update
 	apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
-    elif [[ -f /etc/fedora-release ]]; then
+    elif ((fedora_release)); then
 	dnf update
 	dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
-    elif [[ -f /etc/redhat-release ]]; then
+    elif ((redhat_release)); then
 	yum update
 	yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-    elif [[ -f /etc/SuSE-release ]]; then
+    elif ((suse_release)); then
 	zypper ref
 	zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
-    else
-	err 'No supported distribution found'
-	exit 1
     fi
 }
 
@@ -191,6 +188,19 @@ config_del() {
 
 if ((UID)); then
     err 'This script should be run as root.'
+    exit 1
+fi
+
+if [[ -f /etc/debian_version ]]; then
+    debian_release=1
+elif [[ -f /etc/fedora-release ]]; then
+    fedora_release=1
+elif [[ -f /etc/redhat-release ]]; then
+    redhat_release=1
+elif [[ -f /etc/SuSE-release ]]; then
+    suse_release=1
+else
+    err 'No supported distribution found'
     exit 1
 fi
 
