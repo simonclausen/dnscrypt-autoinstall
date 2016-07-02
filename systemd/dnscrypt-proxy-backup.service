@@ -7,7 +7,7 @@ PartOf=dnscrypt-proxy.service
 #Before=pdnsd.service
 
 [Service]
-EnvironmentFile=/etc/conf.d/dnscrypt-config
+EnvironmentFile=/etc/systemd/system/dnscrypt-proxy.conf
 ExecStart=/usr/local/sbin/dnscrypt-proxy \
 	 --user=${DNSCRYPT_USER} \
 	 --ephemeral-keys \
