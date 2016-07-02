@@ -179,9 +179,8 @@ EOF
 }
 
 config_del() {
-    find /usr/local -name '*sodium*' \
-	 -or -name '*hostip*' \
-	 -or -name '*dnscrypt*' \
+    find /usr/local \( -name '*sodium*' \
+	 -or -name '*hostip*' -or -name '*dnscrypt*' \) \
 	 -print0 | xargs -0 rm -fvr
 
     if [[ -d $cachedir ]]; then
