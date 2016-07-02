@@ -172,6 +172,8 @@ EOF
 	    err 'Configuration file not found. Quitting.'
 	    exit 1
 	fi
+    else
+	: # TODO: Restore resolv.conf backup
     fi
 }
 
@@ -213,9 +215,8 @@ if ((UID)); then
 fi
 
 case "$1" in
-    forcedel)
-	config_del
-	exit ;;
+    forcedel) config_del
+	      exit ;;
 esac
 
 if [[ -f /etc/debian_version ]]; then
@@ -246,7 +247,7 @@ fi
 if ((dnscryptinst && dnscryptconf)); then
     cat <<EOF
 
-Welcome to the dnscrypt-autoinstall script.
+Welcome to the $argv0 script.
 
 It seems like DNSCrypt was installed and configured by this script.
 
@@ -285,7 +286,7 @@ from the system and run this script again.
 
 To uninstall DNSCrypt, try running this script
 again with the 'forcedel' argument. For example:
-    ./dnscrypt-autoinstall.sh forcedel
+    ./$argv0 forcedel
 
 Quitting.
 EOF
@@ -302,7 +303,7 @@ or make it listen on another IP than 127.0.0.1.
 
 To uninstall DNSCrypt, try running this script
 again with the 'forcedel' argument. For example:
-    ./dnscrypt-autoinstall.sh forcedel
+    ./$argv0 forcedel
 
 Quitting.
 EOF
@@ -310,7 +311,7 @@ EOF
 else
     cat <<EOF
 
-Welcome to the dnscrypt-autoinstall script.
+Welcome to the $argv0 script.
 
 This will install DNSCrypt and autoconfigure it to run as a daemon at start up.
 
