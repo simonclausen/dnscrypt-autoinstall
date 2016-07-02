@@ -8,7 +8,7 @@ PartOf=dnscrypt-proxy.service
 
 [Service]
 EnvironmentFile=/etc/conf.d/dnscrypt-config
-ExecStart=/usr/bin/dnscrypt-proxy \
+ExecStart=/usr/local/sbin/dnscrypt-proxy \
 	 --user=${DNSCRYPT_USER} \
 	 --ephemeral-keys \
 	 --resolver_name=${DNSCRYPT_RESOLVER2} \
