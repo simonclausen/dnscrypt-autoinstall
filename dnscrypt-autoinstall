@@ -126,7 +126,7 @@ install_depends() {
 
 config_interface() {
     local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
-    local resolver_list
+    local resolver_list resolver_choice description
 
     # XXX: Verify GPG signature
     if ! curl --retry 5 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
@@ -146,14 +146,15 @@ config_interface() {
 Which DNSCrypt service would you like to use?
 
 EOF
-    local IFS=$'\n' description resolver_choice
-    select description in $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
+    local IFS=$'\n'    
+    select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
+			      $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
 	resolver_choice=$(awk '{print $1}' <<< "$description")
 	break
     done
 
     local sd_conf=/etc/systemd/system/dnscrypt-proxy.conf
-    if [[ -f $sd_conf ]]; then
+    if [[ -f $sd_conf && $resolver_choice != None ]]; then
        sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
     fi
 
@@ -165,6 +166,10 @@ config_resolv() {
     resolv_conf=$(realpath -e /etc/resolv.conf)
     local resolv_conf
 
+    if [[ ! -f $cachedir/$resolv_conf ]]; then
+	cp -a "$resolv_conf" "$cachedir/$resolv_conf"
+    fi
+
     chattr -V -i "$resolv_conf"
     tee "$resolv_conf" >/dev/null <<EOF
 nameserver 127.0.0.1
@@ -175,12 +180,12 @@ EOF
 
 config_del() {
     find /usr/local -name '*sodium*' \
-	 -or -name '*sodium*' \
+	 -or -name '*hostip*' \
 	 -or -name '*dnscrypt*' \
-	 -execdir rm -vr {} \;
+	 -print0 | xargs -0 rm -fvr
 
     if [[ -d $cachedir ]]; then
-	rm -vr "$cachedir"
+	rm -fvr "$cachedir"
     fi
 
     if getent passwd dnscrypt; then
