@@ -163,12 +163,13 @@ EOF
     if [[ $resolver_choice != None ]]; then
 	if [[ -f $sd_conf ]]; then
 	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
-
 	    systemctl daemon-reload
-	    systemctl enable dnscrypt-proxy.service
-	    systemctl restart dnscrypt-proxy.service
+
+	    if systemctl is-active dnscrypt-proxy.service; then
+		systemctl restart dnscrypt-proxy.service
+	    fi
 	else
-	    err 'Configuration file not found. Qutting.'
+	    err 'Configuration file not found. Quitting.'
 	    exit 1
 	fi
     fi
@@ -178,9 +179,7 @@ config_resolv() {
     resolv_conf=$(realpath -e /etc/resolv.conf)
     local resolv_conf
 
-    if [[ ! -f $cachedir/$resolv_conf ]]; then
-	cp -a "$resolv_conf" "$cachedir/$resolv_conf"
-    fi
+    cp -av "$resolv_conf" "$cachedir/"
 
     chattr -V -i "$resolv_conf"
     tee "$resolv_conf" >/dev/null <<EOF
@@ -346,6 +345,9 @@ EOF
 	install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
     fi
 
+    config_resolv
+    systemctl enable dnscrypt-proxy.service
+
     cat <<EOF
 
 DNSCrypt is now installed.
@@ -357,6 +359,8 @@ EOF
     case "$REPLY" in
 	[yY]) config_interface ;;
     esac
+
+    systemctl start dnscrypt-proxy.service
 
     cat <<EOF
 
