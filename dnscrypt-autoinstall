@@ -5,10 +5,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=dnscrypt-autoinstall
-dnscryptinst=0
-lsodiuminst=0
-dnscryptconf=0
 cachedir="/var/cache/$argv0"
+declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
+declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 
 msg() {
     printf '%s\n' "$@"
@@ -110,6 +109,7 @@ get_location() {
 }
 
 install_depends() {
+    #global debian_release fedora_release redhat_release suse_release    
     if ((debian_release)); then
 	apt-get update
 	apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
@@ -127,6 +127,7 @@ install_depends() {
 
 config_interface() {
     local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
+    local description resolver_choice resolver_list
 
     # XXX: Verify GPG signature
     if ! curl --retry 5 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
@@ -173,6 +174,7 @@ EOF
 }
 
 config_del() {
+    #global cachedir
     if [[ -d $cachedir ]]; then
 	rm -rv "$cachedir"
     fi
