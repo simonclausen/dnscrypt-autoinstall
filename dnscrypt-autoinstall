@@ -135,7 +135,7 @@ config_interface() {
     local resolver_list resolver_choice description
 
     # XXX: Verify GPG signature
-    if ! curl --retry 5 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
+    if ! curl --retry 3 --max-time 1 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
 	err 'Retrieving resolvers failed. Falling back to installed version.'
 	if [[ -r /usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv ]]; then
 	    resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
@@ -170,7 +170,8 @@ EOF
 	    exit 1
 	fi
     else
-	config_restore
+	config_resolv_restore
+
 	systemctl stop dnscrypt-proxy.service
 	systemctl disable dnscrypt-proxy.service
     fi
@@ -189,7 +190,7 @@ EOF
     chattr -V +i "$resolv_conf"
 }
 
-config_restore() {
+config_resolv_restore() {
     local resolv_conf
     resolv_conf=$(realpath -e /etc/resolv.conf)
 
@@ -202,7 +203,7 @@ config_del() {
 	 -or -name '*hostip*' -or -name '*dnscrypt*' \) \
 	 -print0 | xargs -0 rm -fvr
 
-    config_restore
+    config_resolv_restore
 
     if [[ -d $cache_dir ]]; then
 	rm -fvr "$cache_dir"
