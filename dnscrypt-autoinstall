@@ -164,16 +164,15 @@ EOF
 	if [[ -f $sd_conf ]]; then
 	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
 	    systemctl daemon-reload
-
-	    if systemctl is-active dnscrypt-proxy.service; then
-		systemctl restart dnscrypt-proxy.service
-	    fi
+	    systemctl restart dnscrypt-proxy.service
 	else
 	    err 'Configuration file not found. Quitting.'
 	    exit 1
 	fi
     else
 	config_restore
+	systemctl stop dnscrypt-proxy.service
+	systemctl disable dnscrypt-proxy.service
     fi
 }
 
@@ -364,10 +363,11 @@ EOF
     read -r -p "(DNSCrypt.eu is default) [y/n]: "
 
     case "$REPLY" in
-	[yY]) config_interface ;;
+	[yY])
+	    config_interface ;;
+	*)
+	    systemctl start dnscrypt-proxy.service ;;
     esac
-
-    systemctl start dnscrypt-proxy.service
 
     cat <<EOF
 
