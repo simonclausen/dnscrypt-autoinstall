@@ -5,7 +5,7 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=dnscrypt-autoinstall
-cachedir="/var/cache/$argv0"
+cache_dir="/var/cache/$argv0"
 
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
 declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
@@ -177,8 +177,8 @@ EOF
 }
 
 config_resolv() {
-    resolv_conf=$(realpath -e /etc/resolv.conf)
     local resolv_conf
+    resolv_conf=$(realpath -e /etc/resolv.conf)
 
     tar -cvf "$cache_dir"/resolv.conf.tar "$resolv_conf"
 
@@ -190,6 +190,9 @@ EOF
 }
 
 config_restore() {
+    local resolv_conf
+    resolv_conf=$(realpath -e /etc/resolv.conf)
+
     chattr -V -i "$resolv_conf"
     tar --no-overwrite-dir -xvf "$cache_dir"/resolv.conf.tar -C /
 }
@@ -201,8 +204,8 @@ config_del() {
 
     config_restore
 
-    if [[ -d $cachedir ]]; then
-	rm -fvr "$cachedir"
+    if [[ -d $cache_dir ]]; then
+	rm -fvr "$cache_dir"
     fi
 
     if getent passwd dnscrypt; then
@@ -329,20 +332,20 @@ EOF
 	passwd -q -l dnscrypt-build
     fi
 
-    install -d "$cachedir"
-    install -d "$cachedir"/build -o dnscrypt-build -g dnscrypt-build -m 700
+    install -d "$cache_dir"
+    install -d "$cache_dir"/build -o dnscrypt-build -g dnscrypt-build -m 700
     install_depends
 
     if ! get_location libsodium; then
-	build_release libsodium "$cachedir"/build
-	read -r pkg_path < "$cachedir"/build/latest
+	build_release libsodium "$cache_dir"/build
+	read -r pkg_path < "$cache_dir"/build/latest
 
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
 	ldconfig
     fi
 
-    build_release dnscrypt-proxy "$cachedir"/build
-    read -r pkg_path < "$cachedir"/build/latest
+    build_release dnscrypt-proxy "$cache_dir"/build
+    read -r pkg_path < "$cache_dir"/build/latest
 
     tar --no-overwrite-dir -xvf "$pkg_path" -C /
 
