@@ -171,9 +171,6 @@ EOF
 	fi
     else
 	config_resolv_restore
-
-	systemctl stop dnscrypt-proxy.service
-	systemctl disable dnscrypt-proxy.service
     fi
 }
 
@@ -199,11 +196,17 @@ config_resolv_restore() {
 }
 
 config_del() {
+    config_resolv_restore
+
+    systemctl stop dnscrypt-proxy.service
+    systemctl disable dnscrypt-proxy.service
+
     find /usr/local \( -name '*sodium*' \
 	 -or -name '*hostip*' -or -name '*dnscrypt*' \) \
 	 -print0 | xargs -0 rm -fvr
 
-    config_resolv_restore
+    rm -fv /etc/systemd/system/dnscrypt-proxy{,-backup}.service
+    rm -fv /etc/systemd/system/dnscrypt-proxy.conf
 
     if [[ -d $cache_dir ]]; then
 	rm -fvr "$cache_dir"
