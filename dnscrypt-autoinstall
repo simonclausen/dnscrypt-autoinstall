@@ -192,7 +192,7 @@ EOF
 
 config_restore() {
     chattr -V -i "$resolv_conf"
-    tar -xvf "$cache_dir"/resolv.conf.tar -C /
+    tar --no-overwrite-dir -xvf "$cache_dir"/resolv.conf.tar -C /
 }
 
 config_del() {
