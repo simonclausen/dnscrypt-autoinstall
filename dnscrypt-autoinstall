@@ -173,7 +173,7 @@ EOF
 	    exit 1
 	fi
     else
-	: # TODO: Restore resolv.conf backup
+	config_restore
     fi
 }
 
@@ -181,9 +181,8 @@ config_resolv() {
     resolv_conf=$(realpath -e /etc/resolv.conf)
     local resolv_conf
 
-    cp -av "$resolv_conf" "$cachedir/"
+    tar -cvf "$cache_dir"/resolv.conf.tar "$resolv_conf"
 
-    chattr -V -i "$resolv_conf"
     tee "$resolv_conf" >/dev/null <<EOF
 nameserver 127.0.0.1
 nameserver 127.0.0.2
@@ -191,10 +190,17 @@ EOF
     chattr -V +i "$resolv_conf"
 }
 
+config_restore() {
+    chattr -V -i "$resolv_conf"
+    tar -xvf "$cache_dir"/resolv.conf.tar -C /
+}
+
 config_del() {
     find /usr/local \( -name '*sodium*' \
 	 -or -name '*hostip*' -or -name '*dnscrypt*' \) \
 	 -print0 | xargs -0 rm -fvr
+
+    config_restore
 
     if [[ -d $cachedir ]]; then
 	rm -fvr "$cachedir"
