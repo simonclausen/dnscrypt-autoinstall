@@ -18,9 +18,9 @@ case "$1" in
     start)
 	echo "Starting $NAME"
 	$DAEMON --daemonize --ephemeral-keys --user=dnscrypt \
-		--local-address=127.0.0.1 --resolver=$RESOLVER
+		--local-address=127.0.0.1 --resolver-name=$RESOLVER
 	# $DAEMON --daemonize --ephemeral-keys --user=dnscrypt \
-	# 	--local-address=127.0.0.2 --resolver=$RESOLVER2
+	# 	--local-address=127.0.0.2 --resolver-name=$RESOLVER2
 	;;
     stop)
 	echo "Stopping $NAME"

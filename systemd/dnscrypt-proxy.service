@@ -10,7 +10,7 @@ EnvironmentFile=/etc/systemd/system/dnscrypt-proxy.conf
 ExecStart=/usr/local/sbin/dnscrypt-proxy \
 	 --user=${DNSCRYPT_USER} \
 	 --ephemeral-keys \
-	 --resolver_name=${DNSCRYPT_RESOLVER} \
+	 --resolver-name=${DNSCRYPT_RESOLVER} \
 	 --local-address=${DNSCRYPT_LOCALIP}:${DNSCRYPT_LOCALPORT}
 Restart=on-abort
 
