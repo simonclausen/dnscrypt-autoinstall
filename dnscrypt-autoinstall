@@ -303,7 +303,7 @@ again with the 'forcedel' argument. For example:
 Quitting.
 EOF
     exit 1
-elif nc -z -w1 127.0.0.1 53; then
+elif ss -plnt | grep 127.0.0.1:53; then
     cat <<EOF
 Error!
 
