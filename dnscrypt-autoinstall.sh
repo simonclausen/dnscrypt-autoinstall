@@ -30,8 +30,6 @@ DNSCRYPTCONF=false
 LSODIUMURL="https://download.libsodium.org/libsodium/releases"
 DNSCRYPTURL="https://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
-LSODIUMVER=$(curl --retry 5 -L $LSODIUMURL | awk -F'(.tar|libsodium-)' '/libsodium-1/ {v=$2}; END {print v}')
-DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
 WHICHRESOLVER=dnscrypteu
 
 # /tmp may be mounted noexec
@@ -185,6 +183,9 @@ EOF
 if [ "$1" == "forcedel" ]; then
 	config_del
 	exit
+else
+	LSODIUMVER=$(curl --retry 5 -L $LSODIUMURL | awk -F'(.tar|libsodium-)' '/libsodium-1/ {v=$2}; END {print v}')
+	DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
 fi
 
 if [ "$DNSCRYPTINST" == "true" ]; then
