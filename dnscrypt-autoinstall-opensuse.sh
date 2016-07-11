@@ -28,7 +28,6 @@ DNSCRYPTINST=false
 DNSCRYPTCONF=false
 DNSCRYPTURL="https://download.dnscrypt.org/dnscrypt-proxy"
 INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
-DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
 WHICHRESOLVER=dnscrypteu
 
 # /tmp may be mounted noexec
@@ -189,6 +188,9 @@ if [ "$1" == "forcedel" ]; then
 	config_del
 	exit
 fi
+
+DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
+
 
 if [ "$DNSCRYPTINST" == "true" ]; then
 	if [ "$DNSCRYPTCONF" == "true" ]; then
