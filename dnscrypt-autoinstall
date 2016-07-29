@@ -196,21 +196,20 @@ config_resolv_restore() {
 }
 
 config_del() {
+    local pkg_cache
+    pkg_cache="$cache_dir"/dnscrypt-build
+
     config_resolv_restore
 
     systemctl stop dnscrypt-proxy.service
     systemctl disable dnscrypt-proxy.service
 
-    find /usr/local \( -name '*sodium*' \
-	 -or -name '*hostip*' -or -name '*dnscrypt*' \) \
-	 -print0 | xargs -0 rm -fvr
+    ( cd /
+      tar -tf "$pkg_cache"/package-libsodium | xargs -I{} rm -dv {}
+      tar -tf "$pkg_cache"/package-dnscrypt-proxy | xargs -I{} rm -dv {}
+    )
 
-    rm -fv /etc/systemd/system/dnscrypt-proxy{,-backup}.service
-    rm -fv /etc/systemd/system/dnscrypt-proxy.conf
-
-    if [[ -d $cache_dir ]]; then
-	rm -fvr "$cache_dir"
-    fi
+    rm -r "$cache_dir"
 
     if getent passwd dnscrypt; then
 	userdel --remove dnscrypt
@@ -221,13 +220,21 @@ config_del() {
     fi
 }
 
+config_del_find() {
+    find /usr/local \( -name '*dnscrypt*' \
+	 -or -name '*sodium*' \
+	 -or -name '*hostip*' \) -delete
+
+    find /etc/systemd -name '*dnscrypt*' -delete
+}
+
 if ((UID)); then
     err 'This script should be run as root.'
     exit 1
 fi
 
 case "$1" in
-    forcedel) config_del
+    forcedel) config_del_find
 	      exit ;;
 esac
 
