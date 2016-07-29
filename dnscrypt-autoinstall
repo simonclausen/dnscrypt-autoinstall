@@ -42,7 +42,7 @@ case "$user_build" in
     dnscrypt-proxy)
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
-	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/'
+	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
 	sd_path=/etc/systemd/system
 	sd_prefix=dnscrypt-autoinstall
 	srcdir="$startdir"/dnscrypt-src
