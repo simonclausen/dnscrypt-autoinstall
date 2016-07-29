@@ -230,6 +230,7 @@ fi
 
 case "$1" in
     forcedel)
+        set +e
         config_del
 	exit ;;
 esac
