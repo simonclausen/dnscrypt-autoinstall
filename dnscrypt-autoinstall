@@ -5,7 +5,9 @@ PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 set -e
 
 argv0=dnscrypt-autoinstall
-cache_dir="/var/cache/$argv0"
+cache_dir=/var/cache/$argv0
+sd_path=/etc/systemd/system
+sd_prefix=$argv0
 
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
 declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
@@ -13,17 +15,17 @@ declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 msg() { printf '%s\n' "$@"; }
 err() { printf '%s\n' "$@" >&2; }
 
-release_parse() {
+_release_parse() {
     awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
 
-release_latest() {
-    curl -LsS --retry 5 "$2" | release_parse "$1" | sort -V | tail -1
+_release_latest() {
+    curl -LsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
 }
 
 build_release() {
     declare -rx user_build="$1" startdir="$2"
-    declare -fx release_parse release_latest
+    declare -fx _release_parse _release_latest
 
     su dnscrypt-build <<'EOF'
 set -e
@@ -32,16 +34,17 @@ umask 0022
 case "$user_build" in
     libsodium)
 	build_url='https://download.libsodium.org/libsodium/releases'
-	build_tgz=$(release_latest libsodium "$build_url")
+	build_tgz=$(_release_latest libsodium "$build_url")
 	srcdir="$startdir"/libsodium-src
 	pkgdir="$startdir"/libsodium-pkg
 	gpgdir="$startdir"/gnupg
 	;;
     dnscrypt-proxy)
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
-	build_tgz=$(release_latest dnscrypt-proxy "$build_url")
+	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
 	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/'
 	sd_path=/etc/systemd/system
+	sd_prefix=dnscrypt-autoinstall
 	srcdir="$startdir"/dnscrypt-src
 	pkgdir="$startdir"/dnscrypt-pkg
 	gpgdir="$startdir"/gnupg
@@ -75,9 +78,9 @@ case "$user_build" in
 	make check
 	;;
     dnscrypt-proxy)
-	curl --retry 5 -LO "$sd_url"/dnscrypt-autoinstall.service
-	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy-backup.service
-	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.conf
+	curl --retry 5 -LO "$sd_url/$sd_prefix".service
+	curl --retry 5 -LO "$sd_url/$sd_prefix"-backup.service
+	curl --retry 5 -LO "$sd_url/$sd_prefix".conf
 	./configure
 	make
 	;;
@@ -88,15 +91,15 @@ fakeroot -- make DESTDIR="$pkgdir" install
 
 case "$user_build" in
     dnscrypt-proxy)
-	install -Dm644 "$srcdir"/dnscrypt-proxy{,-backup}.service -t "$pkgdir/$sd_path"
-	install -Dm644 "$srcdir"/dnscrypt-proxy.conf -t "$pkgdir/$sd_path"
+	install -Dm644 "$srcdir/$sd_prefix"{,-backup}.service -t "$pkgdir/$sd_path"
+	install -Dm644 "$srcdir/$sd_prefix".conf -t "$pkgdir/$sd_path"
 	;;
 esac
 
 cd "$pkgdir"
 fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
 
-printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/latest"
+printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/$user_build-latest"
 exit 0
 
 EOF
@@ -131,6 +134,7 @@ install_depends() {
 }
 
 config_interface() {
+    #global sd_path sd_prefix
     local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
     local resolver_list resolver_choice description
 
@@ -159,12 +163,12 @@ EOF
 	break
     done
 
-    local sd_conf=/etc/systemd/system/dnscrypt-proxy.conf
+    local sd_conf=$sd_path/$sd_prefix.conf
     if [[ $resolver_choice != None ]]; then
 	if [[ -f $sd_conf ]]; then
 	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
 	    systemctl daemon-reload
-	    systemctl restart dnscrypt-autoinstall.service
+	    systemctl restart "$sd_prefix".service
 	else
 	    err 'Configuration file not found. Quitting.'
 	    exit 1
@@ -175,6 +179,7 @@ EOF
 }
 
 config_resolv() {
+    #global cache_dir
     local resolv_conf
     resolv_conf=$(realpath -e /etc/resolv.conf)
 
@@ -188,6 +193,7 @@ EOF
 }
 
 config_resolv_restore() {
+    #global cache_dir
     local resolv_conf
     resolv_conf=$(realpath -e /etc/resolv.conf)
 
@@ -196,20 +202,17 @@ config_resolv_restore() {
 }
 
 config_del() {
-    local pkg_cache
-    pkg_cache="$cache_dir"/dnscrypt-build
-
+    #global cache_dir sd_prefix
     config_resolv_restore
 
-    systemctl stop dnscrypt-autoinstall.service
-    systemctl disable dnscrypt-autoinstall.service
+    systemctl stop "$sd_prefix".service
+    systemctl disable "$sd_prefix".service
 
-    ( cd /
-      tar -tf "$pkg_cache"/package-libsodium | xargs -I{} rm -dv -- {}
-      tar -tf "$pkg_cache"/package-dnscrypt-proxy | xargs -I{} rm -dv -- {}
-    )
+    find /usr/local \( -name '*dnscrypt*' \
+	 -or -name '*sodium*' \
+	 -or -name '*hostip*' \) -exec rm -rv -- {} +
 
-    rm -r -- "$cache_dir"
+    find /etc/systemd -name '*dnscrypt*' -exec rm -rv -- {} +
 
     if getent passwd dnscrypt; then
 	userdel --remove dnscrypt
@@ -220,22 +223,15 @@ config_del() {
     fi
 }
 
-config_del_find() {
-    find /usr/local \( -name '*dnscrypt*' \
-	 -or -name '*sodium*' \
-	 -or -name '*hostip*' \) -delete
-
-    find /etc/systemd -name '*dnscrypt*' -delete
-}
-
 if ((UID)); then
     err 'This script should be run as root.'
     exit 1
 fi
 
 case "$1" in
-    forcedel) config_del_find
-	      exit ;;
+    forcedel)
+        config_del
+	exit ;;
 esac
 
 if [[ -f /etc/debian_version ]]; then
@@ -259,7 +255,7 @@ if get_location libsodium; then
     lsodiuminst=1
 fi
 
-if get_sd_service dnscrypt-autoinstall.service; then
+if get_sd_service "$sd_prefix".service; then
     dnscryptconf=1
 fi
 
@@ -349,14 +345,14 @@ EOF
 
     if ! get_location libsodium; then
 	build_release libsodium "$cache_dir"/build
-	read -r pkg_path < "$cache_dir"/build/latest
+	read -r pkg_path < "$cache_dir"/build/libsodium-latest
 
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
 	ldconfig
     fi
 
     build_release dnscrypt-proxy "$cache_dir"/build
-    read -r pkg_path < "$cache_dir"/build/latest
+    read -r pkg_path < "$cache_dir"/build/dnscrypt-proxy-latest
 
     tar --no-overwrite-dir -xvf "$pkg_path" -C /
 
@@ -366,7 +362,7 @@ EOF
     fi
 
     config_resolv
-    systemctl enable dnscrypt-autoinstall.service
+    systemctl enable "$sd_prefix".service
 
     cat <<EOF
 
@@ -380,7 +376,7 @@ EOF
 	[yY])
 	    config_interface ;;
 	*)
-	    systemctl start dnscrypt-autoinstall.service ;;
+	    systemctl start "$sd_prefix".service ;;
     esac
 
     cat <<EOF
