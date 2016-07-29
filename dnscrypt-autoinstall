@@ -205,11 +205,11 @@ config_del() {
     systemctl disable dnscrypt-proxy.service
 
     ( cd /
-      tar -tf "$pkg_cache"/package-libsodium | xargs -I{} rm -dv {}
-      tar -tf "$pkg_cache"/package-dnscrypt-proxy | xargs -I{} rm -dv {}
+      tar -tf "$pkg_cache"/package-libsodium | xargs -I{} rm -dv -- {}
+      tar -tf "$pkg_cache"/package-dnscrypt-proxy | xargs -I{} rm -dv -- {}
     )
 
-    rm -r "$cache_dir"
+    rm -r -- "$cache_dir"
 
     if getent passwd dnscrypt; then
 	userdel --remove dnscrypt
