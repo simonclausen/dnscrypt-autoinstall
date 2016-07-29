@@ -75,7 +75,7 @@ case "$user_build" in
 	make check
 	;;
     dnscrypt-proxy)
-	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.service
+	curl --retry 5 -LO "$sd_url"/dnscrypt-autoinstall.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy-backup.service
 	curl --retry 5 -LO "$sd_url"/dnscrypt-proxy.conf
 	./configure
@@ -164,7 +164,7 @@ EOF
 	if [[ -f $sd_conf ]]; then
 	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
 	    systemctl daemon-reload
-	    systemctl restart dnscrypt-proxy.service
+	    systemctl restart dnscrypt-autoinstall.service
 	else
 	    err 'Configuration file not found. Quitting.'
 	    exit 1
@@ -201,8 +201,8 @@ config_del() {
 
     config_resolv_restore
 
-    systemctl stop dnscrypt-proxy.service
-    systemctl disable dnscrypt-proxy.service
+    systemctl stop dnscrypt-autoinstall.service
+    systemctl disable dnscrypt-autoinstall.service
 
     ( cd /
       tar -tf "$pkg_cache"/package-libsodium | xargs -I{} rm -dv -- {}
@@ -259,7 +259,7 @@ if get_location libsodium; then
     lsodiuminst=1
 fi
 
-if get_sd_service dnscrypt-proxy.service; then
+if get_sd_service dnscrypt-autoinstall.service; then
     dnscryptconf=1
 fi
 
@@ -366,7 +366,7 @@ EOF
     fi
 
     config_resolv
-    systemctl enable dnscrypt-proxy.service
+    systemctl enable dnscrypt-autoinstall.service
 
     cat <<EOF
 
@@ -380,7 +380,7 @@ EOF
 	[yY])
 	    config_interface ;;
 	*)
-	    systemctl start dnscrypt-proxy.service ;;
+	    systemctl start dnscrypt-autoinstall.service ;;
     esac
 
     cat <<EOF

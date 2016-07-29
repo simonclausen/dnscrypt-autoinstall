@@ -1,12 +1,12 @@
 [Unit]
 Description=A tool for securing communications between a client and a DNS resolver.
 After=network.target
-Wants=network.target dnscrypt-proxy-backup.service
+Wants=network.target dnscrypt-autoinstall-backup.service
 # Only needed if you use pdnsd, other caching DNS servers can go here. Could be ignored too.
 #Before=pdnsd.service
 
 [Service]
-EnvironmentFile=/etc/systemd/system/dnscrypt-proxy.conf
+EnvironmentFile=/etc/systemd/system/dnscrypt-autoinstall.conf
 ExecStart=/usr/local/sbin/dnscrypt-proxy \
 	 --user=${DNSCRYPT_USER} \
 	 --ephemeral-keys \
