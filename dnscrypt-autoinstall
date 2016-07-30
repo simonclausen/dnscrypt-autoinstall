@@ -328,6 +328,7 @@ EOF
 			msg 'Reconfiguration done. Quitting.'
 			exit ;;
 		2)
+			set +e
 			config_del
 			msg 'DNSCrypt has been removed. Quitting.'
 			exit ;;
@@ -400,7 +401,7 @@ EOF
 		ldconfig
 	fi
 
-	build_dnscrypt-proxy "$cache_dir"/build
+	build_dnscrypt "$cache_dir"/build
 	read -r pkg_path < "$cache_dir"/build/dnscrypt-proxy-latest
 
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
