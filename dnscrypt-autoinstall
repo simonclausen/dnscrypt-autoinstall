@@ -104,7 +104,7 @@ build_dnscrypt() {
 	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
 	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
 
-	sd_url=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/
+	sd_url=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/fakeroot/systemd/
 	sd_path=/etc/systemd/system
 	sd_prefix=dnscrypt-autoinstall
 
@@ -305,24 +305,7 @@ if get_sd_service "$sd_prefix.service"; then
 	dnscryptconf=1
 fi
 
-if ss -plnt | egrep '127.0.0.1.*:53'; then
-	cat <<EOF
-Error!
-
-It looks like there is already a DNS server
-or forwarder installed and listening on 127.0.0.1.
-
-To use DNSCrypt, you need to either uninstall it
-or make it listen on another IP than 127.0.0.1.
-
-To uninstall DNSCrypt, try running this script
-again with the 'forcedel' argument. For example:
-	./$argv0 forcedel
-
-Quitting.
-EOF
-	exit 1
-elif ((dnscryptinst && dnscryptconf)); then
+if ((dnscryptinst && dnscryptconf)); then
 	cat <<EOF
 
 Welcome to the $argv0 script.
@@ -363,6 +346,23 @@ not configured by this script.
 
 Remove DNSCrypt and it's configuration completely
 from the system and run this script again.
+
+To uninstall DNSCrypt, try running this script
+again with the 'forcedel' argument. For example:
+	./$argv0 forcedel
+
+Quitting.
+EOF
+	exit 1
+elif ss -plnt | egrep '127.0.0.1.*:53'; then
+	cat <<EOF
+Error!
+
+It looks like there is already a DNS server
+or forwarder installed and listening on 127.0.0.1.
+
+To use DNSCrypt, you need to either uninstall it
+or make it listen on another IP than 127.0.0.1.
 
 To uninstall DNSCrypt, try running this script
 again with the 'forcedel' argument. For example:
