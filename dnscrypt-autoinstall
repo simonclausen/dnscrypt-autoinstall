@@ -1,13 +1,16 @@
 #!/bin/bash -
+# -*- indent-tabs-mode: 1; tab-width: 4; -*-
+set -e
+
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 IFS=$'\t\n'
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
-set -e
 
 argv0=dnscrypt-autoinstall
 cache_dir=/var/cache/$argv0
+dnscrypt_home=/var/lib/dnscrypt
 sd_path=/etc/systemd/system
-sd_prefix=$argv0
+sd_prefix=dnscrypt-autoinstall
 
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
 declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
@@ -15,253 +18,295 @@ declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 msg() { printf '%s\n' "$@"; }
 err() { printf '%s\n' "$@" >&2; }
 
+## Build functions
+
 _release_parse() {
-    awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
+	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
 
 _release_latest() {
-    curl -LsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
+	curl -LsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
 }
 
-build_release() {
-    declare -rx user_build="$1" startdir="$2"
-    declare -fx _release_parse _release_latest
+# $1: gpg home - $2: signature
+_verify_sig() {
+	mkdir -p "$1" -m 700
+	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --auto-key-retrieve --verify "$2"
+}
 
-    su dnscrypt-build <<'EOF'
-set -e
-umask 0022
+# $@: source URI
+_get_source() {
+	local uri
+	for uri; do
+		curl --retry 5 -LO "$uri"
+	done
+}
 
-case "$user_build" in
-    libsodium)
+## Main functions
+
+# $1: build directory
+build_libsodium() {
+	declare -rx startdir="$1"
+	declare -fx _release_parse _release_latest _verify_sig _get_source
+
+	su dnscrypt-build <<-EOF
+	set -e
+	umask 0022
+
 	build_url='https://download.libsodium.org/libsodium/releases'
 	build_tgz=$(_release_latest libsodium "$build_url")
+
 	srcdir="$startdir"/libsodium-src
 	pkgdir="$startdir"/libsodium-pkg
 	gpgdir="$startdir"/gnupg
-	;;
-    dnscrypt-proxy)
-	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
-	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
-	sd_url='https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/'
-	sd_path=/etc/systemd/system
-	sd_prefix=dnscrypt-autoinstall
-	srcdir="$startdir"/dnscrypt-src
-	pkgdir="$startdir"/dnscrypt-pkg
-	gpgdir="$startdir"/gnupg
-	;;
-    *)
-	exit 1
-	;;
-esac
 
-if [[ ! $build_tgz ]]; then
-    printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
-    exit 1
-fi
+	if [[ ! $build_tgz ]]; then
+		printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
+		exit 1
+	fi
 
-mkdir -p "$srcdir"
-cd "$srcdir"
-curl --retry 5 -LO "$build_url/$build_tgz"
-curl --retry 5 -LO "$build_url/$build_tgz".sig
+	mkdir -p "$srcdir"
+	cd "$srcdir"
 
-mkdir -p "$gpgdir"
-chmod -c 700 "$gpgdir"
-gpg --homedir="$gpgdir" --keyserver keys.gnupg.net --verbose --recv-keys 54A2B8892CC3D6A597B92B6C210627AABA709FE1
-gpg --homedir="$gpgdir" --keyserver keys.gnupg.net --verbose --verify "$build_tgz".sig
+	_get_source "$build_url/$build_tgz"{,.sig}
+	_verify_sig "$gpgdir" "$build_tgz".sig
 
-tar -xzvf "$build_tgz" --strip-components=1
+	tar -xzvf "$build_tgz" --strip-components=1
 
-case "$user_build" in
-    libsodium)
 	./configure --enable-minimal
 	make
 	make check
-	;;
-    dnscrypt-proxy)
-	curl --retry 5 -LO "$sd_url/$sd_prefix".service
-	curl --retry 5 -LO "$sd_url/$sd_prefix"-backup.service
-	curl --retry 5 -LO "$sd_url/$sd_prefix".conf
+
+	mkdir -p "$pkgdir"
+	fakeroot -- make DESTDIR="$pkgdir" install
+
+	cd "$pkgdir"
+	fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
+
+	printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/libsodium-latest"
+	exit 0
+EOF
+	if (($?)); then
+		err "Build for $1 failed."
+		exit 1
+	fi
+}
+
+# $1: build directory
+build_dnscrypt() {
+	declare -rx startdir="$1"
+	declare -fx _release_parse _release_latest _verify_sig _get_source
+
+	su dnscrypt-build <<-EOF
+	set -e
+	umask 0022
+
+	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
+
+	sd_url=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd/
+	sd_path=/etc/systemd/system
+	sd_prefix=dnscrypt-autoinstall
+
+	srcdir="$startdir"/dnscrypt-src
+	pkgdir="$startdir"/dnscrypt-pkg
+	gpgdir="$startdir"/gnupg
+
+	if [[ ! $build_tgz ]]; then
+		printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
+		exit 1
+	fi
+
+	mkdir -p "$srcdir"
+	cd "$srcdir"
+
+	_get_source "$build_url/$build_tgz"{,.sig}
+	_get_source "$sd_url/$sd_prefix"{,-backup}.service "$sd_url/$sd_prefix".conf
+	_verify_sig "$gpgdir" "$build_tgz".sig
+
+	tar -xzvf "$build_tgz" --strip-components=1
+
 	./configure
 	make
-	;;
-esac
-
-mkdir -p "$pkgdir"
-fakeroot -- make DESTDIR="$pkgdir" install
-
-case "$user_build" in
-    dnscrypt-proxy)
 	install -Dm644 "$srcdir/$sd_prefix"{,-backup}.service -t "$pkgdir/$sd_path"
 	install -Dm644 "$srcdir/$sd_prefix".conf -t "$pkgdir/$sd_path"
-	;;
-esac
 
-cd "$pkgdir"
-fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
+	mkdir -p "$pkgdir"
+	fakeroot -- make DESTDIR="$pkgdir" install
 
-printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/$user_build-latest"
-exit 0
+	cd "$pkgdir"
+	fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
 
+	printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/dnscrypt-latest"
+	exit 0
 EOF
-    if (($?)); then
-	err "Build for $1 failed."
-	exit 1
-    fi
+	if (($?)); then
+		err "Build for $1 failed."
+		exit 1
+	fi
 }
 
+# $1: binary, library
 get_location() {
-    [[ $(whereis "$1" | awk '{print $2}') ]]
+	[[ $(whereis "$1" | awk '{print $2}') ]]
 }
 
+# $1: systemd service
 get_sd_service() {
-    [[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
+	[[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
 }
 
 install_depends() {
-    if ((debian_release)); then
-	apt-get update
-	apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
-    elif ((fedora_release)); then
-	dnf update
-	dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
-    elif ((redhat_release)); then
-	yum update
-	yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-    elif ((suse_release)); then
-	zypper ref
-	zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
-    fi
+	if ((debian_release)); then
+		apt-get update
+		apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+	elif ((fedora_release)); then
+		dnf update
+		dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+	elif ((redhat_release)); then
+		yum update
+		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+	elif ((suse_release)); then
+		zypper ref
+		zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+	fi
 }
 
-config_interface() {
-    #global sd_path sd_prefix
-    local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
-    local resolver_list resolver_choice description
+select_provider() {
+	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
+	local resolver_list description
 
-    # XXX: Verify GPG signature
-    if ! curl --retry 3 --max-time 1 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
-	err 'Retrieving resolvers failed. Falling back to installed version.'
-	if [[ -r /usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv ]]; then
-	    resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+	if ! curl --retry 3 --max-time 1 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
+		err 'Retrieving resolvers failed. Falling back to installed version.'
+		if [[ -r /usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv ]]; then
+			resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+		else
+			err 'Could not read resolver list. Quitting.'
+			exit 1
+		fi
 	else
-	    err 'Could not read resolver list. Quitting.'
-	    exit 1
+		#_verify_sig "$(mktemp -d)" dnscrypt-resolvers.csv.sig
+		resolver_list=./dnscrypt-resolvers.csv
 	fi
-    else
-	resolver_list=./dnscrypt-resolvers.csv
-    fi
 
-    cat <<EOF
+	cat <<EOF
 
 Which DNSCrypt service would you like to use?
 
 EOF
-    local IFS=$'\n'
-    select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
-			      $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
-	resolver_choice=$(awk '{print $1}' <<< "$description")
-	break
-    done
+	local IFS=$'\n'
+	select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
+							  $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
+		awk '{print $1}' <<< "$description"
+		break
+	done
+}
 
-    local sd_conf=$sd_path/$sd_prefix.conf
-    if [[ $resolver_choice != None ]]; then
-	if [[ -f $sd_conf ]]; then
-	    sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_conf"
-	    systemctl daemon-reload
-	    systemctl restart "$sd_prefix".service
+config_interface() {
+	#global cache_dir sd_prefix sd_path
+	local resolver_choice
+	resolver_choice=$(select_provider)
+
+	if [[ $resolver_choice != None ]]; then
+		if [[ -f $sd_path/$sd_prefix.conf ]]; then
+			sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_path/$sd_prefix.conf"
+			systemctl daemon-reload
+			systemctl restart "$sd_prefix.service"
+		else
+			err 'Configuration file not found. Quitting.'
+			exit 1
+		fi
 	else
-	    err 'Configuration file not found. Quitting.'
-	    exit 1
+		config_resolv_restore "$cache_dir"
 	fi
-    else
-	config_resolv_restore
-    fi
 }
 
+# $1: cache directory
 config_resolv() {
-    #global cache_dir
-    local resolv_conf
-    resolv_conf=$(realpath -e /etc/resolv.conf)
+	local resolv_conf
+	resolv_conf=$(realpath -e -- /etc/resolv.conf)
 
-    tar -cvf "$cache_dir"/resolv.conf.tar "$resolv_conf"
+	tar -cvf "$1"/resolv.conf.tar "$resolv_conf"
 
-    tee "$resolv_conf" >/dev/null <<EOF
-nameserver 127.0.0.1
-nameserver 127.0.0.2
+	tee "$resolv_conf" >/dev/null <<-EOF
+	nameserver 127.0.0.1
+	nameserver 127.0.0.2
 EOF
-    chattr -V +i "$resolv_conf"
+	chattr -V +i "$resolv_conf"
 }
 
+# $1: cache directory
 config_resolv_restore() {
-    #global cache_dir
-    local resolv_conf
-    resolv_conf=$(realpath -e /etc/resolv.conf)
+	local resolv_conf
+	resolv_conf=$(realpath -e -- /etc/resolv.conf)
 
-    chattr -V -i "$resolv_conf"
-    tar --no-overwrite-dir -xvf "$cache_dir"/resolv.conf.tar -C /
+	chattr -V -i "$resolv_conf"
+	tar --no-overwrite-dir -xvf "$1"/resolv.conf.tar -C /
 }
 
 config_del() {
-    #global cache_dir sd_prefix
-    config_resolv_restore
+	#global cache_dir sd_prefix
+	config_resolv_restore "$cache_dir"
 
-    systemctl stop "$sd_prefix".service
-    systemctl disable "$sd_prefix".service
+	systemctl stop "$sd_prefix.service"
+	systemctl disable "$sd_prefix.service"
 
-    find /usr/local \( -name '*dnscrypt*' \
-	 -or -name '*sodium*' \
-	 -or -name '*hostip*' \) -exec rm -rv -- {} +
+	find /usr/local \( -name '*dnscrypt*' \
+		 -or -name '*sodium*' \
+		 -or -name '*hostip*' \) -exec rm -rv -- {} +
 
-    find /etc/systemd -name '*dnscrypt*' -exec rm -rv -- {} +
+	find /etc/systemd -name '*dnscrypt*' -exec rm -rv -- {} +
 
-    if getent passwd dnscrypt; then
-	userdel --remove dnscrypt
-    fi
+	if getent passwd dnscrypt; then
+		userdel --remove dnscrypt
+	fi
 
-    if getent passwd dnscrypt-build; then
-	userdel --remove dnscrypt-build
-    fi
+	if getent passwd dnscrypt-build; then
+		userdel --remove dnscrypt-build
+	fi
 }
 
+## Main
+
 if ((UID)); then
-    err 'This script should be run as root.'
-    exit 1
+	err 'This script should be run as root.'
+	exit 1
 fi
 
 case "$1" in
-    forcedel)
-        set +e
-        config_del
-	exit ;;
+	forcedel)
+		set +e
+		config_del
+		exit ;;
 esac
 
 if [[ -f /etc/debian_version ]]; then
-    debian_release=1
+	debian_release=1
 elif [[ -f /etc/fedora-release ]]; then
-    fedora_release=1
+	fedora_release=1
 elif [[ -f /etc/redhat-release ]]; then
-    redhat_release=1
+	redhat_release=1
 elif [[ -f /etc/SuSE-release ]]; then
-    suse_release=1
+	suse_release=1
 else
-    err 'No supported distribution found'
-    exit 1
+	err 'No supported distribution found'
+	exit 1
 fi
 
 if get_location dnscrypt-proxy; then
-    dnscryptinst=1
+	dnscryptinst=1
 fi
 
 if get_location libsodium; then
-    lsodiuminst=1
+	lsodiuminst=1
 fi
 
-if get_sd_service "$sd_prefix".service; then
-    dnscryptconf=1
+if get_sd_service "$sd_prefix.service"; then
+	dnscryptconf=1
 fi
 
 if ((dnscryptinst && dnscryptconf)); then
-    cat <<EOF
+	cat <<EOF
 
 Welcome to the $argv0 script.
 
@@ -274,23 +319,24 @@ What would you like to do?
 3) Exit.
 
 EOF
-    read -r -p 'Select an option [1-3]: '
+	read -r -p 'Select an option [1-3]: '
 
-    case "$REPLY" in
-	1)
-	    config_interface
-	    msg 'Reconfiguration done. Quitting.'
-	    exit ;;
-	2)
-	    config_del
-	    msg 'DNSCrypt has been removed. Quitting.'
-	    exit ;;
-	3)
-	    msg 'Bye!'
-	    exit ;;
-    esac
+	case "$REPLY" in
+		1)
+			select_provider
+			config_interface
+			msg 'Reconfiguration done. Quitting.'
+			exit ;;
+		2)
+			config_del
+			msg 'DNSCrypt has been removed. Quitting.'
+			exit ;;
+		3)
+			msg 'Bye!'
+			exit ;;
+	esac
 elif ((dnscryptinst)); then
-    cat <<EOF
+	cat <<EOF
 
 Error!
 
@@ -302,13 +348,13 @@ from the system and run this script again.
 
 To uninstall DNSCrypt, try running this script
 again with the 'forcedel' argument. For example:
-    ./$argv0 forcedel
+	./$argv0 forcedel
 
 Quitting.
 EOF
-    exit 1
+	exit 1
 elif ss -plnt | grep 127.0.0.1:53; then
-    cat <<EOF
+	cat <<EOF
 Error!
 
 It looks like there is already a DNS server
@@ -319,68 +365,72 @@ or make it listen on another IP than 127.0.0.1.
 
 To uninstall DNSCrypt, try running this script
 again with the 'forcedel' argument. For example:
-    ./$argv0 forcedel
+	./$argv0 forcedel
 
 Quitting.
 EOF
-    exit 1
+	exit 1
 else
-    cat <<EOF
+	cat <<EOF
 
 Welcome to the $argv0 script.
 
 This will install DNSCrypt and autoconfigure it to run as a daemon at start up.
 
 EOF
-    read -n1 -r -p "Press any key to continue..."
-    clear
+	read -n1 -r -p "Press any key to continue..."
+	clear
 
-    if ! getent passwd dnscrypt-build; then
-	useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
-	passwd -q -l dnscrypt-build
-    fi
+	if ! getent passwd dnscrypt-build; then
+		useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
+		passwd -q -l dnscrypt-build
+	fi
 
-    install -d "$cache_dir"
-    install -d "$cache_dir"/build -o dnscrypt-build -g dnscrypt-build -m 700
-    install_depends
+	install -d "$cache_dir"
+	install -d "$cache_dir"/build -o dnscrypt-build -g dnscrypt-build -m 700
 
-    if ! get_location libsodium; then
-	build_release libsodium "$cache_dir"/build
-	read -r pkg_path < "$cache_dir"/build/libsodium-latest
+	install_depends
+
+	if ! get_location libsodium; then
+		build_libsodium "$cache_dir"/build
+		read -r pkg_path < "$cache_dir"/build/libsodium-latest
+
+		tar --no-overwrite-dir -xvf "$pkg_path" -C /
+		ldconfig
+	fi
+
+	build_dnscrypt-proxy "$cache_dir"/build
+	read -r pkg_path < "$cache_dir"/build/dnscrypt-proxy-latest
 
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
-	ldconfig
-    fi
 
-    build_release dnscrypt-proxy "$cache_dir"/build
-    read -r pkg_path < "$cache_dir"/build/dnscrypt-proxy-latest
+	if ! getent passwd dnscrypt; then
+		useradd --system -d "$dnscrypt_home" -s /bin/nologin dnscrypt
+		install -g dnscrypt -o dnscrypt -m 700 -d "$dnscrypt_home"
+	fi
 
-    tar --no-overwrite-dir -xvf "$pkg_path" -C /
+	config_resolv "$cache_dir"
+	systemctl enable "$sd_prefix.service"
 
-    if ! getent passwd dnscrypt; then
-	useradd --system -d /var/lib/dnscrypt -s /bin/nologin dnscrypt
-	install -g dnscrypt -o dnscrypt -m 700 -d /var/lib/dnscrypt
-    fi
-
-    config_resolv
-    systemctl enable "$sd_prefix".service
-
-    cat <<EOF
+	cat <<EOF
 
 DNSCrypt is now installed.
 
 Would you like to see a list of supported providers?
 EOF
-    read -r -p "(DNSCrypt.eu is default) [y/n]: "
+	read -r -p "(DNSCrypt.eu is default) [y/n]: "
 
-    case "$REPLY" in
-	[yY])
-	    config_interface ;;
-	*)
-	    systemctl start "$sd_prefix".service ;;
-    esac
+	case "$REPLY" in
+		[yY])
+			select_provider
+			config_interface
+			;;
+		*)
+			systemctl start "$sd_prefix.service"
+			;;
+	esac
 
-    cat <<EOF
+	cat <<EOF
 
 You can run this script again to reconfigure, turn off, or uninstall it.
 EOF
