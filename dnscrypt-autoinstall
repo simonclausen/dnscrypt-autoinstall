@@ -1,10 +1,9 @@
 #!/bin/bash -
 # -*- indent-tabs-mode: 1; tab-width: 4; -*-
-set -e
-
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 IFS=$'\t\n'
-PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+set -e
 
 argv0=dnscrypt-autoinstall
 cache_dir=/var/cache/$argv0
@@ -12,6 +11,7 @@ dnscrypt_home=/var/lib/dnscrypt
 sd_path=/etc/systemd/system
 sd_prefix=dnscrypt-autoinstall
 
+declare -r argv0 cache_dir dnscrypt_home sd_path sd_prefix
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
 declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 
@@ -375,7 +375,8 @@ else
 
 Welcome to the $argv0 script.
 
-This will install DNSCrypt and autoconfigure it to run as a daemon at start up.
+This will install DNSCrypt and autoconfigure it to
+run as a daemon at start up.
 
 EOF
 	read -n1 -r -p "Press any key to continue..."
