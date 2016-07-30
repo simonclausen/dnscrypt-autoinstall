@@ -305,7 +305,7 @@ if get_sd_service "$sd_prefix.service"; then
 	dnscryptconf=1
 fi
 
-if ss -plnt | grep 127.0.0.1:53; then
+if ss -plnt | egrep '127.0.0.1.*:53'; then
 	cat <<EOF
 Error!
 
