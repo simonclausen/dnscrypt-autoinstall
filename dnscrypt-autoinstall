@@ -165,7 +165,7 @@ install_depends() {
 	case "$1" in
 		debian)
 			apt-get update
-			apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+			apt-get install -y automake tar libtool build-essential ca-certificates curl
 			;;
 		fedora)			
 			dnf update
@@ -232,24 +232,18 @@ EOF
 
 # $1: cache directory
 config_resolv() {
-	local resolv_conf
-	resolv_conf=$(realpath -e -- /etc/resolv.conf)
+	tar -cvf "$1"/resolv.conf.tar --remove-files /etc/resolv.conf
 
-	tar -cvf "$1"/resolv.conf.tar "$resolv_conf"
-
-	tee "$resolv_conf" >/dev/null <<-EOF
+	tee /etc/resolv.conf >/dev/null <<-EOF
 	nameserver 127.0.0.1
 	nameserver 127.0.0.2
 EOF
-	chattr -V +i "$resolv_conf"
+	chattr -V +i /etc/resolv.conf
 }
 
 # $1: cache directory
 config_resolv_restore() {
-	local resolv_conf
-	resolv_conf=$(realpath -e -- /etc/resolv.conf)
-
-	chattr -V -i "$resolv_conf"
+	chattr -V -i /etc/resolv.conf
 	tar --no-overwrite-dir -xvf "$1"/resolv.conf.tar -C /
 }
 
