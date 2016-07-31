@@ -178,13 +178,15 @@ install_depends() {
 }
 
 select_provider() {
-	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/
-	local resolver_list description
+	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-resolvers.csv
+	local installed=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+	local resolver_list
 
-	if ! curl --retry 3 --max-time 1 -LO "$resolver_url"/dnscrypt-resolvers.csv; then
+	if ! curl --retry 3 --max-time 1 -LO "$resolver_url"; then
 		err 'Retrieving resolvers failed. Falling back to installed version.'
-		if [[ -r /usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv ]]; then
-			resolver_list=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+		
+		if [[ -r $installed ]]; then
+			resolver_list=$installed
 		else
 			err 'Could not read resolver list. Quitting.'
 			exit 1
@@ -194,12 +196,12 @@ select_provider() {
 		resolver_list=./dnscrypt-resolvers.csv
 	fi
 
-	cat <<EOF
+	cat <<-EOF
 
-Which DNSCrypt service would you like to use?
+	Which DNSCrypt service would you like to use?
 
 EOF
-	local IFS=$'\n'
+	local IFS=$'\n' description
 	select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
 							  $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
 		awk '{print $1}' <<< "$description"
