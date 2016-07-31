@@ -308,15 +308,15 @@ fi
 if ((dnscryptinst && dnscryptconf)); then
 	cat <<EOF
 
-Welcome to the $argv0 script.
+	Welcome to the $argv0 script.
 
-It seems like DNSCrypt was installed and configured by this script.
+	It seems like DNSCrypt was installed and configured by this script.
 
-What would you like to do?
+	What would you like to do?
 
-1) Configure another DNSCrypt service or turn off DNSCrypt.
-2) Uninstall DNSCrypt and remove the auto-startup configuration.
-3) Exit.
+	1) Configure another DNSCrypt service or turn off DNSCrypt.
+	2) Uninstall DNSCrypt and remove the auto-startup configuration.
+	3) Exit.
 
 EOF
 	read -r -p 'Select an option [1-3]: '
@@ -337,47 +337,48 @@ EOF
 			exit ;;
 	esac
 elif ((dnscryptinst)); then
-	cat <<EOF
+	cat <<-EOF
 
-Error!
+	Error!
 
-It seems like DNSCrypt is already installed but
-not configured by this script.
+	It seems like DNSCrypt is already installed but
+	not configured by this script.
 
-Remove DNSCrypt and it's configuration completely
-from the system and run this script again.
+	Remove DNSCrypt and it's configuration completely
+	from the system and run this script again.
 
-To uninstall DNSCrypt, try running this script
-again with the 'forcedel' argument. For example:
-	./$argv0 forcedel
+	To uninstall DNSCrypt, try running this script
+	again with the 'forcedel' argument. For example:
+		./$argv0 forcedel
 
-Quitting.
+	Quitting.
 EOF
 	exit 1
 elif ss -plnt | egrep '127.0.0.1.*:53'; then
-	cat <<EOF
-Error!
+	cat <<-EOF
 
-It looks like there is already a DNS server
-or forwarder installed and listening on 127.0.0.1.
+	Error!
 
-To use DNSCrypt, you need to either uninstall it
-or make it listen on another IP than 127.0.0.1.
+	It looks like there is already a DNS server
+	or forwarder installed and listening on 127.0.0.1.
 
-To uninstall DNSCrypt, try running this script
-again with the 'forcedel' argument. For example:
-	./$argv0 forcedel
+	To use DNSCrypt, you need to either uninstall it
+	or make it listen on another IP than 127.0.0.1.
 
-Quitting.
+	To uninstall DNSCrypt, try running this script
+	again with the 'forcedel' argument. For example:
+		./$argv0 forcedel
+
+	Quitting.
 EOF
 	exit 1
 else
-	cat <<EOF
+	cat <<-EOF
 
-Welcome to the $argv0 script.
+	Welcome to the $argv0 script.
 
-This will install DNSCrypt and autoconfigure it to
-run as a daemon at start up.
+	This will install DNSCrypt and autoconfigure it to
+	run as a daemon at start up.
 
 EOF
 	read -n1 -r -p "Press any key to continue..."
@@ -414,11 +415,11 @@ EOF
 	config_resolv "$cache_dir"
 	systemctl enable "$sd_prefix.service"
 
-	cat <<EOF
+	cat <<-EOF
 
-DNSCrypt is now installed.
+	DNSCrypt is now installed.
 
-Would you like to see a list of supported providers?
+	Would you like to see a list of supported providers?
 EOF
 	read -r -p "(DNSCrypt.eu is default) [y/n]: "
 
@@ -432,8 +433,8 @@ EOF
 			;;
 	esac
 
-	cat <<EOF
+	cat <<-EOF
 
-You can run this script again to reconfigure, turn off, or uninstall it.
+	You can run this script again to reconfigure, turn off, or uninstall it.
 EOF
 fi
