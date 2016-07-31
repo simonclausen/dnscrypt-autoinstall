@@ -35,7 +35,7 @@ _release_latest() {
 # $2: .sig file
 _verify_sig() {
 	mkdir -p "$1" -m 700
-	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --auto-key-retrieve --verify "$2"
+	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --keyserver-options auto-key-retrieve --verify "$2"
 }
 
 # $@: source URI
@@ -65,7 +65,7 @@ build_libsodium() {
 	gpgdir="$startdir"/gnupg
 
 	if [[ ! $build_tgz ]]; then
-		printf '%s\n' "Could not retrieve $user_build version." >&2
+		printf '%s\n' "Could not retrieve libsodium version." >&2
 		exit 1
 	fi
 
@@ -117,7 +117,7 @@ build_dnscrypt() {
 	gpgdir="$startdir"/gnupg
 
 	if [[ ! $build_tgz ]]; then
-		printf '%s\n' "Could not retrieve $user_build version." >&2
+		printf '%s\n' "Could not retrieve dnscrypt version." >&2
 		exit 1
 	fi
 
@@ -169,6 +169,7 @@ install_depends() {
 			;;
 		fedora)			
 			dnf update
+			dnf group install -y core
 			dnf install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl libsodium-devel
 			;;
 		redhat)
@@ -182,12 +183,13 @@ install_depends() {
 	esac
 }
 
-select_provider() {
+config_interface() {
+	#global cache_dir sd_prefix sd_path
 	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-resolvers.csv
 	local installed=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
 	local resolver_list
 
-	if ! curl --retry 3 --max-time 1 -LO "$resolver_url"; then
+	if ! curl --retry 1 --max-time 1 -LO "$resolver_url"; then
 		err 'Retrieving resolvers failed. Falling back to installed version.'
 		
 		if [[ -r $installed ]]; then
@@ -201,27 +203,21 @@ select_provider() {
 		resolver_list=./dnscrypt-resolvers.csv
 	fi
 
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	Which DNSCrypt service would you like to use?
 
 EOF
-	local IFS=$'\n' description
+	local IFS=$'\n' description resolver_choice
 	select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
 							  $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
-		awk '{print $1}' <<< "$description"
+		resolver_choice=$(awk '{print $1}' <<< "$description")
 		break
 	done
-}
-
-config_interface() {
-	#global cache_dir sd_prefix sd_path
-	local resolver_choice
-	resolver_choice=$(select_provider)
 
 	if [[ $resolver_choice != None ]]; then
 		if [[ -f $sd_path/$sd_prefix.conf ]]; then
-			sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_path/$sd_prefix.conf"
+			sed -i "s|DNSCRYPT_RESOLVER=.*|DNSCRYPT_RESOLVER=$resolver_choice|" "$sd_path/$sd_prefix.conf"
 
 			systemctl daemon-reload
 			systemctl restart "$sd_prefix.service"
@@ -323,7 +319,7 @@ if ! command -v ss >/dev/null; then
 fi
 
 if ((dnscryptinst && dnscryptconf)); then
-	cat <<EOF
+	cat >&2 <<EOF
 
 	Welcome to the $argv0 script.
 
@@ -340,7 +336,6 @@ EOF
 
 	case "$REPLY" in
 		1)
-			select_provider
 			config_interface
 			msg 'Reconfiguration done. Quitting.'
 			exit ;;
@@ -354,7 +349,7 @@ EOF
 			exit ;;
 	esac
 elif ((dnscryptinst)); then
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	Error!
 
@@ -372,7 +367,7 @@ elif ((dnscryptinst)); then
 EOF
 	exit 1
 elif ss -plnt | egrep '127.0.0.1.*:53'; then
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	Error!
 
@@ -390,7 +385,7 @@ elif ss -plnt | egrep '127.0.0.1.*:53'; then
 EOF
 	exit 1
 else
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	Welcome to the $argv0 script.
 
@@ -403,7 +398,7 @@ EOF
 
 	if ! getent passwd dnscrypt-build; then
 		useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
-		passwd -q -l dnscrypt-build
+		passwd -l dnscrypt-build
 	fi
 
 	install -d "$cache_dir"
@@ -420,7 +415,7 @@ EOF
 	fi
 
 	build_dnscrypt "$cache_dir"/build
-	read -r pkg_path < "$cache_dir"/build/dnscrypt-proxy-latest
+	read -r pkg_path < "$cache_dir"/build/dnscrypt-latest
 
 	tar --no-overwrite-dir -xvf "$pkg_path" -C /
 
@@ -432,7 +427,7 @@ EOF
 	config_resolv "$cache_dir"
 	systemctl enable "$sd_prefix.service"
 
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	DNSCrypt is now installed.
 
@@ -442,7 +437,6 @@ EOF
 
 	case "$REPLY" in
 		[yY])
-			select_provider
 			config_interface
 			;;
 		*)
@@ -450,7 +444,7 @@ EOF
 			;;
 	esac
 
-	cat <<-EOF
+	cat >&2 <<-EOF
 
 	You can run this script again to reconfigure, turn off, or uninstall it.
 EOF
