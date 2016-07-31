@@ -1,5 +1,6 @@
 #!/bin/bash -
 # -*- indent-tabs-mode: 1; tab-width: 4; -*-
+
 PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 IFS=$'\t\n'
@@ -19,6 +20,7 @@ err() { printf '%s\n' "$@" >&2; }
 
 ## Build functions
 
+# $1: tar.gz name
 _release_parse() {
 	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
@@ -30,7 +32,7 @@ _release_latest() {
 }
 
 # $1: gpg home
-# $2: signature
+# $2: .sig file
 _verify_sig() {
 	mkdir -p "$1" -m 700
 	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --auto-key-retrieve --verify "$2"
@@ -63,7 +65,7 @@ build_libsodium() {
 	gpgdir="$startdir"/gnupg
 
 	if [[ ! $build_tgz ]]; then
-		printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
+		printf '%s\n' "Could not retrieve $user_build version." >&2
 		exit 1
 	fi
 
@@ -89,7 +91,7 @@ build_libsodium() {
 	exit 0
 EOF
 	if (($?)); then
-		err "Build for $1 failed."
+		err "Build for $1 failed. Quitting."
 		exit 1
 	fi
 }
@@ -115,7 +117,7 @@ build_dnscrypt() {
 	gpgdir="$startdir"/gnupg
 
 	if [[ ! $build_tgz ]]; then
-		printf '%s\n' "Could not retrieve $user_build version. Quitting." >&2
+		printf '%s\n' "Could not retrieve $user_build version." >&2
 		exit 1
 	fi
 
@@ -143,7 +145,7 @@ build_dnscrypt() {
 	exit 0
 EOF
 	if (($?)); then
-		err "Build for $1 failed."
+		err "Build for $1 failed. Quitting."
 		exit 1
 	fi
 }
@@ -167,15 +169,15 @@ install_depends() {
 			;;
 		fedora)			
 			dnf update
-			dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+			dnf install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl libsodium-devel
 			;;
 		redhat)
 			yum update
-			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+			yum install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl
 			;;
 		suse)
 			zypper ref
-			zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+			zypper in -y fakeroot automake gcc gcc-c++ libtool libsodium18 libsodium-devel
 			;;
 	esac
 }
