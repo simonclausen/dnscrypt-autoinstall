@@ -13,7 +13,6 @@ sd_prefix=dnscrypt-autoinstall
 
 declare -r argv0 cache_dir dnscrypt_home sd_path sd_prefix
 declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
-declare -i debian_release=0 fedora_release=0 redhat_release=0 suse_release=0
 
 msg() { printf '%s\n' "$@"; }
 err() { printf '%s\n' "$@" >&2; }
@@ -156,20 +155,26 @@ get_sd_service() {
 	[[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
 }
 
+# $1: vendor
 install_depends() {
-	if ((debian_release)); then
-		apt-get update
-		apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
-	elif ((fedora_release)); then
-		dnf update
-		dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
-	elif ((redhat_release)); then
-		yum update
-		yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
-	elif ((suse_release)); then
-		zypper ref
-		zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
-	fi
+	case "$1" in
+		debian)
+			apt-get update
+			apt-get install -y automake bsdtar libtool build-essential ca-certificates curl
+			;;
+		fedora)			
+			dnf update
+			dnf install -y make automake gcc gcc-c++ libtool ca-certificates curl nc libsodium-devel
+			;;
+		redhat)
+			yum update
+			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl nc
+			;;
+		suse)
+			zypper ref
+			zypper in -y automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+			;;
+	esac
 }
 
 select_provider() {
@@ -281,13 +286,13 @@ case "$1" in
 esac
 
 if [[ -f /etc/debian_version ]]; then
-	debian_release=1
+	vendor=debian
 elif [[ -f /etc/fedora-release ]]; then
-	fedora_release=1
+	vendor=fedora
 elif [[ -f /etc/redhat-release ]]; then
-	redhat_release=1
+	vendor=redhat
 elif [[ -f /etc/SuSE-release ]]; then
-	suse_release=1
+	vendor=suse
 else
 	err 'No supported distribution found'
 	exit 1
@@ -392,7 +397,7 @@ EOF
 	install -d "$cache_dir"
 	install -d "$cache_dir"/build -o dnscrypt-build -g dnscrypt-build -m 700
 
-	install_depends
+	install_depends "$vendor"
 
 	if ! get_location libsodium; then
 		build_libsodium "$cache_dir"/build
