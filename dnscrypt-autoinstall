@@ -318,6 +318,10 @@ if get_sd_service "$sd_prefix.service"; then
 	dnscryptconf=1
 fi
 
+if ! command -v ss >/dev/null; then
+	err 'Please install the "iproute" (Red Hat) or "iproute2" (Debian) package.'
+fi
+
 if ((dnscryptinst && dnscryptconf)); then
 	cat <<EOF
 
