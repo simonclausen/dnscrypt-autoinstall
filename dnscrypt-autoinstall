@@ -23,11 +23,14 @@ _release_parse() {
 	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\.tar\.gz$" '$2 ~ name {print $2}'
 }
 
+# $1: tar.gz name
+# $2: index URI
 _release_latest() {
 	curl -LsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
 }
 
-# $1: gpg home - $2: signature
+# $1: gpg home
+# $2: signature
 _verify_sig() {
 	mkdir -p "$1" -m 700
 	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --auto-key-retrieve --verify "$2"
@@ -217,6 +220,7 @@ config_interface() {
 	if [[ $resolver_choice != None ]]; then
 		if [[ -f $sd_path/$sd_prefix.conf ]]; then
 			sed -i "s@DNSCRYPT_RESOLVER=.*@DNSCRYPT_RESOLVER=$resolver_choice@" "$sd_path/$sd_prefix.conf"
+
 			systemctl daemon-reload
 			systemctl restart "$sd_prefix.service"
 		else
