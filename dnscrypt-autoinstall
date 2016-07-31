@@ -28,7 +28,7 @@ _release_parse() {
 # $1: tar.gz name
 # $2: index URI
 _release_latest() {
-	curl -LsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
+	curl -fLsS --retry 5 "$2" | _release_parse "$1" | sort -V | tail -1
 }
 
 # $1: gpg home
@@ -42,7 +42,7 @@ _verify_sig() {
 _get_source() {
 	local uri
 	for uri; do
-		curl --retry 5 -LO "$uri"
+		curl --retry 5 -fLO "$uri"
 	done
 }
 
@@ -189,7 +189,7 @@ config_interface() {
 	local installed=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
 	local resolver_list
 
-	if ! curl --retry 1 --max-time 1 -LO "$resolver_url"; then
+	if ! curl --retry 1 --max-time 1 -fLO "$resolver_url"; then
 		err 'Retrieving resolvers failed. Falling back to installed version.'
 		
 		if [[ -r $installed ]]; then
