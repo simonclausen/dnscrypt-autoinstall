@@ -160,12 +160,40 @@ get_sd_service() {
 	[[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
 }
 
+redhat_epel_fakeroot() {
+	source /etc/os-release
+
+	case "$VERSION_ID" in
+		6) yum install -y fakeroot
+		   ;;
+		7) ARCH=$(uname -m)
+		   FR_VER=1.18.4-2.el7.$ARCH
+		   EPEL=https://dl.fedoraproject.org/pub/epel
+
+		   if ! command -V fakeroot; then
+			   rpm --import <(curl -fL https://getfedora.org/static/352C64E5.txt) # EPEL 7
+
+			   case "$ARCH" in
+				   x86_64|ppc64|ppc64le)
+					   rpm -ivh "$EPEL/7/x86_64/f/fakeroot-libs-$FR_VER.rpm"
+					   rpm -ivh "$EPEL/7/x86_64/f/fakeroot-$FR_VER.rpm"
+					   ;;
+				   *)
+					   err 'Unsupported architecture. Please install fakeroot manually.'
+					   return 1
+					   ;;
+			   esac
+		   fi
+		   ;;
+	esac
+}
+
 # $1: vendor
 install_depends() {
 	case "$1" in
 		debian)
 			apt-get update
-			apt-get install -y automake tar libtool build-essential ca-certificates curl
+			apt-get install -y automake fakeroot tar libtool build-essential ca-certificates curl
 			;;
 		fedora)			
 			dnf update
@@ -174,11 +202,11 @@ install_depends() {
 			;;
 		redhat)
 			yum update
-			yum install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl
-			;;
+			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
+			( redhat_epel_fakeroot )
 		suse)
 			zypper ref
-			zypper in -y fakeroot automake gcc gcc-c++ libtool libsodium18 libsodium-devel
+			zypper in -y fakeroot automake gcc gcc-c++ libtool libsodium-devel
 			;;
 	esac
 }
