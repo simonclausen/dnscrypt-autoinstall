@@ -179,7 +179,8 @@ redhat_epel_fakeroot() {
 					   rpm -ivh "$EPEL/7/x86_64/f/fakeroot-$FR_VER.rpm"
 					   ;;
 				   *)
-					   err 'Unsupported architecture. Please install fakeroot manually.'
+					   err 'Unsupported architecture. Install fakeroot manually, for example from:'
+					   err 'https://dl.fedoraproject.org/pub/epel/7/SRPMS/f/fakeroot-1.18.4-2.el7.src.rpm'
 					   return 1
 					   ;;
 			   esac
@@ -206,7 +207,12 @@ install_depends() {
 			( redhat_epel_fakeroot )
 		suse)
 			zypper ref
-			zypper in -y fakeroot automake gcc gcc-c++ libtool libsodium-devel
+			zypper in -y automake gcc gcc-c++ libtool libsodium-devel
+
+			if ! command -V fakeroot; then
+				err 'The fakeroot package was not found. Please install it, for example from:'
+				err 'https://software.opensuse.org/package/fakeroot'
+			fi
 			;;
 	esac
 }
