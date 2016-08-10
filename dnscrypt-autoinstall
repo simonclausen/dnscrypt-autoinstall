@@ -230,6 +230,7 @@ install_depends() {
 			yum update
 			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
 			redhat_epel_fakeroot
+			;;
 		suse)
 			zypper ref
 			zypper in -y automake gcc gcc-c++ libtool libsodium-devel
