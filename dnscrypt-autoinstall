@@ -22,13 +22,13 @@ err() { printf '%s\n' "$@" >&2; }
 
 # $1: tar.gz name
 _release_parse() {
-	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\\.tar\\.gz$" '$2 ~ name {print $2}'
+	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\\\\.tar\\\\.gz$" '$2 ~ name {print $2}'
 }
 
 # $1: tar.gz name
 # $2: index URI
 _release_latest() {
-	curl -fL --retry 8 --retry-delay 1 "$2" | _release_parse "$1" | sort -V | tail -1
+	curl -fL --retry 6 --retry-delay 2 "$2" | _release_parse "$1" | sort -V | tail -1
 }
 
 # $1: gpg home
@@ -42,7 +42,7 @@ _verify_sig() {
 _get_source() {
 	local uri
 	for uri; do
-		curl -fLO --retry 8 --retry-delay 1 "$uri"
+		curl -fLO --retry 6 --retry-delay 2 "$uri"
 	done
 }
 
@@ -161,13 +161,13 @@ get_sd_service() {
 }
 
 redhat_epel_fakeroot() {
-	if ! command -V fakeroot; then
+	if ! command -V fakeroot 2>/dev/null; then
 		source /etc/os-release
 
 		case "$VERSION_ID" in
 			6) yum install -y fakeroot
 			   ;;
-			7) rpm --import <(curl -fL https://getfedora.org/static/352C64E5.txt) # EPEL 7
+			7) rpm --import https://getfedora.org/static/352C64E5.txt
 			   redhat_arch_fakeroot
 			   ;;
 		esac
@@ -200,12 +200,12 @@ EOF
 }
 
 suse_fakeroot() {
-	if ! command -V fakeroot; then
+	if ! command -V fakeroot 2>/dev/null; then
 		cat >&2 <<-EOF
 
 		Error!
 
-		The fakeroot package was not found. Please install it manually,
+		The fakeroot package was not found. Install fakeroot manually,
 		for example from:
 
 		https://software.opensuse.org/package/fakeroot
@@ -222,12 +222,12 @@ install_depends() {
 			apt-get install -y automake fakeroot tar libtool build-essential ca-certificates curl
 			;;
 		fedora)			
-			dnf update
+			dnf update -y
 			dnf group install -y core
 			dnf install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl libsodium-devel
 			;;
 		redhat)
-			yum update
+			yum update -y
 			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
 			redhat_epel_fakeroot
 			;;
@@ -461,6 +461,9 @@ EOF
 		read -r pkg_path < "$cache_dir"/build/libsodium-latest
 
 		tar --no-overwrite-dir -xvf "$pkg_path" -C /
+		case "$vendor" in
+			fedora|redhat) echo /usr/local/lib > /etc/ld.so.conf.d/libsodium.conf ;;
+		esac
 		ldconfig
 	fi
 
