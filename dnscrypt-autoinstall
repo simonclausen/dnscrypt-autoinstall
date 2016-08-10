@@ -161,32 +161,57 @@ get_sd_service() {
 }
 
 redhat_epel_fakeroot() {
-	source /etc/os-release
+	if ! command -V fakeroot; then
+		source /etc/os-release
 
-	case "$VERSION_ID" in
-		6) yum install -y fakeroot
-		   ;;
-		7) ARCH=$(uname -m)
-		   FR_VER=1.18.4-2.el7.$ARCH
-		   EPEL=https://dl.fedoraproject.org/pub/epel
+		case "$VERSION_ID" in
+			6) yum install -y fakeroot
+			   ;;
+			7) rpm --import <(curl -fL https://getfedora.org/static/352C64E5.txt) # EPEL 7
+			   redhat_arch_fakeroot
+			   ;;
+		esac
+	fi
+}
 
-		   if ! command -V fakeroot; then
-			   rpm --import <(curl -fL https://getfedora.org/static/352C64E5.txt) # EPEL 7
+redhat_arch_fakeroot() {
+	ARCH=$(uname -m)
+	EPEL=https://dl.fedoraproject.org/pub/epel
+	FR_VER=1.18.4-2.el7.$ARCH
 
-			   case "$ARCH" in
-				   x86_64|ppc64|ppc64le)
-					   rpm -ivh "$EPEL/7/x86_64/f/fakeroot-libs-$FR_VER.rpm"
-					   rpm -ivh "$EPEL/7/x86_64/f/fakeroot-$FR_VER.rpm"
-					   ;;
-				   *)
-					   err 'Unsupported architecture. Install fakeroot manually, for example from:'
-					   err 'https://dl.fedoraproject.org/pub/epel/7/SRPMS/f/fakeroot-1.18.4-2.el7.src.rpm'
-					   return 1
-					   ;;
-			   esac
-		   fi
-		   ;;
+	case "$ARCH" in
+		x86_64|ppc64|ppc64le)
+			rpm -ivh "$EPEL/7/x86_64/f/fakeroot-libs-$FR_VER.rpm"
+			rpm -ivh "$EPEL/7/x86_64/f/fakeroot-$FR_VER.rpm"
+			;;
+		*)
+			cat >&2 <<-EOF
+	
+			Error!
+
+			Unsupported architecture. Install fakeroot manually,
+			for example from:
+
+			https://dl.fedoraproject.org/pub/epel/7/SRPMS/f/fakeroot-1.18.4-2.el7.src.rpm
+EOF
+			exit 1
+			;;
 	esac
+}
+
+suse_fakeroot() {
+	if ! command -V fakeroot; then
+		cat >&2 <<-EOF
+
+		Error!
+
+		The fakeroot package was not found. Please install it manually,
+		for example from:
+
+		https://software.opensuse.org/package/fakeroot
+EOF
+		exit 1
+	fi
 }
 
 # $1: vendor
@@ -204,15 +229,11 @@ install_depends() {
 		redhat)
 			yum update
 			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
-			( redhat_epel_fakeroot )
+			redhat_epel_fakeroot
 		suse)
 			zypper ref
 			zypper in -y automake gcc gcc-c++ libtool libsodium-devel
-
-			if ! command -V fakeroot; then
-				err 'The fakeroot package was not found. Please install it, for example from:'
-				err 'https://software.opensuse.org/package/fakeroot'
-			fi
+			suse_fakeroot
 			;;
 	esac
 }
