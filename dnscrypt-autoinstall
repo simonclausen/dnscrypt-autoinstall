@@ -424,7 +424,7 @@ EOF
 	fi
 
 	install -d "$cache_dir"
-	install -d "$cache_dir"/build -o dnscrypt-build -g dnscrypt-build -m 700
+	install -d "$cache_dir"/build -o dnscrypt-build -m 750
 
 	install_depends "$vendor"
 
