@@ -132,11 +132,11 @@ build_dnscrypt() {
 
 	./configure
 	make
+
+	mkdir -p "$pkgdir/$sd_path"
+	fakeroot -- make DESTDIR="$pkgdir" install
 	install -Dm644 "$srcdir/$sd_prefix"{,-backup}.service -t "$pkgdir/$sd_path"
 	install -Dm644 "$srcdir/$sd_prefix".conf -t "$pkgdir/$sd_path"
-
-	mkdir -p "$pkgdir"
-	fakeroot -- make DESTDIR="$pkgdir" install
 
 	cd "$pkgdir"
 	fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
