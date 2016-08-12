@@ -233,7 +233,7 @@ install_depends() {
 			;;
 		suse)
 			zypper ref
-			zypper in -y automake gcc gcc-c++ libtool libsodium-devel
+			zypper in -y make automake gcc gcc-c++ libtool libsodium-devel
 			suse_fakeroot
 			;;
 	esac
@@ -474,7 +474,7 @@ EOF
 
 	if ! getent passwd dnscrypt; then
 		useradd --system -d "$dnscrypt_home" -s /bin/nologin dnscrypt
-		install -g dnscrypt -o dnscrypt -m 700 -d "$dnscrypt_home"
+		install -o dnscrypt -m 750 -d "$dnscrypt_home"
 	fi
 
 	config_resolv "$cache_dir"
