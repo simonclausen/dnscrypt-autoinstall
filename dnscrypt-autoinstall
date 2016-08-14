@@ -170,6 +170,9 @@ redhat_epel_fakeroot() {
 			7) rpm --import https://getfedora.org/static/352C64E5.txt
 			   redhat_arch_fakeroot
 			   ;;
+			7.*) rpm --import https://getfedora.org/static/352C64E5.txt
+			   redhat_arch_fakeroot
+			   ;;
 		esac
 	fi
 }
