@@ -1,0 +1,506 @@
+#!/bin/bash -
+# -*- indent-tabs-mode: 1; tab-width: 4; -*-
+
+PS4='+(${BASH_SOURCE}:${LINENO}): ${FUNCNAME[0]:+${FUNCNAME[0]}(): }'
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+IFS=$'\t\n'
+set -e
+
+argv0=dnscrypt-autoinstall
+cache_dir=/var/cache/$argv0
+dnscrypt_home=/var/lib/dnscrypt
+sd_path=/etc/systemd/system
+sd_prefix=dnscrypt-autoinstall
+
+declare -r argv0 cache_dir dnscrypt_home sd_path sd_prefix
+declare -i dnscryptinst=0 lsodiuminst=0 dnscryptconf=0
+
+msg() { printf '%s\n' "$@"; }
+err() { printf '%s\n' "$@" >&2; }
+
+## Build functions
+
+# $1: tar.gz name
+_release_parse() {
+	awk -F '</?a( href=\".+\">)?' -v name="^$1-[0-9.]+\\\\.tar\\\\.gz$" '$2 ~ name {print $2}'
+}
+
+# $1: tar.gz name
+# $2: index URI
+_release_latest() {
+	curl -fL --retry 6 --retry-delay 2 "$2" | _release_parse "$1" | sort -V | tail -1
+}
+
+# $1: gpg home
+# $2: .sig file
+_verify_sig() {
+	mkdir -p "$1" -m 700
+	gpg --homedir="$1" --keyserver keys.gnupg.net --verbose --keyserver-options auto-key-retrieve --verify "$2"
+}
+
+# $@: source URI
+_get_source() {
+	local uri
+	for uri; do
+		curl -fLO --retry 6 --retry-delay 2 "$uri"
+	done
+}
+
+## Main functions
+
+# $1: build directory
+build_libsodium() {
+	declare -rx startdir="$1"
+	declare -fx _release_parse _release_latest _verify_sig _get_source
+
+	su dnscrypt-build <<-'EOF'
+	set -e
+	umask 0022
+
+	build_url='https://download.libsodium.org/libsodium/releases'
+	build_tgz=$(_release_latest libsodium "$build_url")
+
+	srcdir="$startdir"/libsodium-src
+	pkgdir="$startdir"/libsodium-pkg
+	gpgdir="$startdir"/gnupg
+
+	if [[ ! $build_tgz ]]; then
+		printf '%s\n' "Could not retrieve libsodium version." >&2
+		exit 1
+	fi
+
+	mkdir -p "$srcdir"
+	cd "$srcdir"
+
+	_get_source "$build_url/$build_tgz"{,.sig}
+	_verify_sig "$gpgdir" "$build_tgz".sig
+
+	tar -xzvf "$build_tgz" --strip-components=1
+
+	./configure --enable-minimal
+	make
+	make check
+
+	mkdir -p "$pkgdir"
+	fakeroot -- make DESTDIR="$pkgdir" install
+
+	cd "$pkgdir"
+	fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
+
+	printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/libsodium-latest"
+	exit 0
+EOF
+	if (($?)); then
+		err "Build for $1 failed. Quitting."
+		exit 1
+	fi
+}
+
+# $1: build directory
+build_dnscrypt() {
+	declare -rx startdir="$1"
+	declare -fx _release_parse _release_latest _verify_sig _get_source
+
+	su dnscrypt-build <<-'EOF'
+	set -e
+	umask 0022
+
+	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
+
+	sd_url=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd
+	sd_path=/etc/systemd/system
+	sd_prefix=dnscrypt-autoinstall
+
+	srcdir="$startdir"/dnscrypt-src
+	pkgdir="$startdir"/dnscrypt-pkg
+	gpgdir="$startdir"/gnupg
+
+	if [[ ! $build_tgz ]]; then
+		printf '%s\n' "Could not retrieve dnscrypt version." >&2
+		exit 1
+	fi
+
+	mkdir -p "$srcdir"
+	cd "$srcdir"
+
+	_get_source "$build_url/$build_tgz"{,.sig}
+	_get_source "$sd_url/$sd_prefix"{,-backup}.service "$sd_url/$sd_prefix".conf
+	_verify_sig "$gpgdir" "$build_tgz".sig
+
+	tar -xzvf "$build_tgz" --strip-components=1
+
+	./configure
+	make
+
+	mkdir -p "$pkgdir/$sd_path"
+	fakeroot -- make DESTDIR="$pkgdir" install
+	install -Dm644 "$srcdir/$sd_prefix"{,-backup}.service -t "$pkgdir/$sd_path"
+	install -Dm644 "$srcdir/$sd_prefix".conf -t "$pkgdir/$sd_path"
+
+	cd "$pkgdir"
+	fakeroot -- env LANG=C tar -cf - * | gzip -c - > "$startdir/package-$build_tgz"
+
+	printf '%s\n' "$startdir/package-$build_tgz" > "$startdir/dnscrypt-latest"
+	exit 0
+EOF
+	if (($?)); then
+		err "Build for $1 failed. Quitting."
+		exit 1
+	fi
+}
+
+# $1: binary, library
+get_location() {
+	[[ $(whereis "$1" | awk '{print $2}') ]]
+}
+
+# $1: systemd service
+get_sd_service() {
+	[[ $(systemctl show "$1" -p FragmentPath | awk -F= '{print $2}') ]]
+}
+
+redhat_epel_fakeroot() {
+	if ! command -V fakeroot 2>/dev/null; then
+		source /etc/os-release
+
+		case "$VERSION_ID" in
+			6*)
+				yum install -y fakeroot
+				;;
+			7*)
+				rpm --import https://getfedora.org/static/352C64E5.txt
+				redhat_arch_fakeroot
+				;;
+		esac
+	fi
+}
+
+redhat_arch_fakeroot() {
+	ARCH=$(uname -m)
+	EPEL=https://dl.fedoraproject.org/pub/epel
+	FR_VER=1.18.4-2.el7.$ARCH
+
+	case "$ARCH" in
+		x86_64|ppc64|ppc64le)
+			rpm -ivh "$EPEL/7/x86_64/f/fakeroot-libs-$FR_VER.rpm"
+			rpm -ivh "$EPEL/7/x86_64/f/fakeroot-$FR_VER.rpm"
+			;;
+		*)
+			cat >&2 <<-EOF
+	
+			Error!
+
+			Unsupported architecture. Install fakeroot manually,
+			for example from:
+
+			https://dl.fedoraproject.org/pub/epel/7/SRPMS/f/fakeroot-1.18.4-2.el7.src.rpm
+EOF
+			exit 1
+			;;
+	esac
+}
+
+suse_fakeroot() {
+	if ! command -V fakeroot 2>/dev/null; then
+		cat >&2 <<-EOF
+
+		Error!
+
+		The fakeroot package was not found. Install fakeroot manually,
+		for example from:
+
+		https://software.opensuse.org/package/fakeroot
+EOF
+		exit 1
+	fi
+}
+
+# $1: vendor
+install_depends() {
+	case "$1" in
+		debian)
+			apt-get update
+			apt-get install -y automake fakeroot tar libtool build-essential ca-certificates curl
+			;;
+		fedora)			
+			dnf update -y
+			dnf group install -y core
+			dnf install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl libsodium-devel
+			;;
+		redhat)
+			yum update -y
+			yum install -y make automake gcc gcc-c++ libtool ca-certificates curl
+			redhat_epel_fakeroot
+			;;
+		suse)
+			zypper ref
+			zypper in -y make automake gcc gcc-c++ libtool libsodium-devel
+			suse_fakeroot
+			;;
+	esac
+}
+
+config_interface() {
+	#global cache_dir sd_prefix sd_path
+	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-resolvers.csv
+	local installed=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
+	local resolver_list
+
+	if ! curl --retry 2 --retry-delay 1 -fLO "$resolver_url"; then
+		err 'Retrieving resolvers failed. Falling back to installed version.'
+		
+		if [[ -r $installed ]]; then
+			resolver_list=$installed
+		else
+			err 'Could not read resolver list. Quitting.'
+			exit 1
+		fi
+	else
+		#_verify_sig "$(mktemp -d)" dnscrypt-resolvers.csv.sig
+		resolver_list=./dnscrypt-resolvers.csv
+	fi
+
+	cat >&2 <<-EOF
+
+	Which DNSCrypt service would you like to use?
+
+EOF
+	local IFS=$'\n' description resolver_choice
+	select description in $(printf "%-30s(%s)\n" None 'Regular, unencrypted DNS') \
+							  $(awk -F, '!/^Name/ {printf "%-30s(%s)\n", $1, $2}' "$resolver_list"); do
+		resolver_choice=$(awk '{print $1}' <<< "$description")
+		break
+	done
+
+	if [[ $resolver_choice != None ]]; then
+		if [[ -f $sd_path/$sd_prefix.conf ]]; then
+			sed -i "s|DNSCRYPT_RESOLVER=.*|DNSCRYPT_RESOLVER=$resolver_choice|" "$sd_path/$sd_prefix.conf"
+
+			systemctl daemon-reload
+			systemctl restart "$sd_prefix.service"
+		else
+			err 'Configuration file not found. Quitting.'
+			exit 1
+		fi
+	else
+		config_resolv_restore "$cache_dir"
+	fi
+}
+
+# $1: cache directory
+config_resolv() {
+	tar -cvf "$1"/resolv.conf.tar --remove-files /etc/resolv.conf
+
+	tee /etc/resolv.conf >/dev/null <<-EOF
+	nameserver 127.0.0.1
+	nameserver 127.0.0.2
+EOF
+	chattr -V +i /etc/resolv.conf
+}
+
+# $1: cache directory
+config_resolv_restore() {
+	chattr -V -i /etc/resolv.conf
+	tar --no-overwrite-dir -xvf "$1"/resolv.conf.tar -C /
+}
+
+config_del() {
+	#global cache_dir sd_prefix
+	config_resolv_restore "$cache_dir"
+
+	systemctl stop "$sd_prefix.service"
+	systemctl disable "$sd_prefix.service"
+
+	find /usr/local \( -name '*dnscrypt*' \
+		 -or -name '*sodium*' \
+		 -or -name '*hostip*' \) -exec rm -rv -- {} +
+
+	find /etc/systemd -name '*dnscrypt*' -exec rm -rv -- {} +
+
+	if getent passwd dnscrypt; then
+		userdel --remove dnscrypt
+	fi
+
+	if getent passwd dnscrypt-build; then
+		userdel --remove dnscrypt-build
+	fi
+}
+
+## Main
+
+if ((UID)); then
+	err 'This script should be run as root.'
+	exit 1
+fi
+
+case "$1" in
+	forcedel)
+		set +e
+		config_del
+		exit ;;
+esac
+
+if [[ -f /etc/debian_version ]]; then
+	vendor=debian
+elif [[ -f /etc/fedora-release ]]; then
+	vendor=fedora
+elif [[ -f /etc/redhat-release ]]; then
+	vendor=redhat
+elif [[ -f /etc/SuSE-release ]]; then
+	vendor=suse
+else
+	err 'No supported distribution found'
+	exit 1
+fi
+
+if get_location dnscrypt-proxy; then
+	dnscryptinst=1
+fi
+
+if get_location libsodium; then
+	lsodiuminst=1
+fi
+
+if get_sd_service "$sd_prefix.service"; then
+	dnscryptconf=1
+fi
+
+if ! command -v ss >/dev/null; then
+	err 'Please install the "iproute" (Red Hat) or "iproute2" (Debian) package.'
+fi
+
+if ((dnscryptinst && dnscryptconf)); then
+	cat >&2 <<EOF
+
+	Welcome to the $argv0 script.
+
+	It seems like DNSCrypt was installed and configured by this script.
+
+	What would you like to do?
+
+	1) Configure another DNSCrypt service or turn off DNSCrypt.
+	2) Uninstall DNSCrypt and remove the auto-startup configuration.
+	3) Exit.
+
+EOF
+	read -r -p 'Select an option [1-3]: '
+
+	case "$REPLY" in
+		1)
+			config_interface
+			msg 'Reconfiguration done. Quitting.'
+			exit ;;
+		2)
+			set +e
+			config_del
+			msg 'DNSCrypt has been removed. Quitting.'
+			exit ;;
+		3)
+			msg 'Bye!'
+			exit ;;
+	esac
+elif ((dnscryptinst)); then
+	cat >&2 <<-EOF
+
+	Error!
+
+	It seems like DNSCrypt is already installed but
+	not configured by this script.
+
+	Remove DNSCrypt and it's configuration completely
+	from the system and run this script again.
+
+	To uninstall DNSCrypt, try running this script
+	again with the 'forcedel' argument. For example:
+		./$argv0 forcedel
+
+	Quitting.
+EOF
+	exit 1
+elif ss -plnt | egrep '127.0.0.1.*:53'; then
+	cat >&2 <<-EOF
+
+	Error!
+
+	It looks like there is already a DNS server
+	or forwarder installed and listening on 127.0.0.1.
+
+	To use DNSCrypt, you need to either uninstall it
+	or make it listen on another IP than 127.0.0.1.
+
+	To uninstall DNSCrypt, try running this script
+	again with the 'forcedel' argument. For example:
+		./$argv0 forcedel
+
+	Quitting.
+EOF
+	exit 1
+else
+	cat >&2 <<-EOF
+
+	Welcome to the $argv0 script.
+
+	This will install DNSCrypt and autoconfigure it to
+	run as a daemon at start up.
+
+EOF
+	read -n1 -r -p "Press any key to continue..."
+	clear
+
+	if ! getent passwd dnscrypt-build; then
+		useradd --system dnscrypt-build -c "$argv0 build user" -s /bin/bash
+		passwd -l dnscrypt-build
+	fi
+
+	install -d "$cache_dir"
+	install -d "$cache_dir"/build -o dnscrypt-build -m 750
+
+	install_depends "$vendor"
+
+	if ! get_location libsodium; then
+		build_libsodium "$cache_dir"/build
+		read -r pkg_path < "$cache_dir"/build/libsodium-latest
+
+		tar --no-overwrite-dir -xvf "$pkg_path" -C /
+		case "$vendor" in
+			fedora|redhat) echo /usr/local/lib > /etc/ld.so.conf.d/libsodium.conf ;;
+		esac
+		ldconfig
+	fi
+
+	build_dnscrypt "$cache_dir"/build
+	read -r pkg_path < "$cache_dir"/build/dnscrypt-latest
+
+	tar --no-overwrite-dir -xvf "$pkg_path" -C /
+
+	if ! getent passwd dnscrypt; then
+		useradd --system -d "$dnscrypt_home" -s /bin/nologin dnscrypt
+		install -o dnscrypt -m 750 -d "$dnscrypt_home"
+	fi
+
+	config_resolv "$cache_dir"
+	systemctl enable "$sd_prefix.service"
+
+	cat >&2 <<-EOF
+
+	DNSCrypt is now installed.
+
+	Would you like to see a list of supported providers?
+EOF
+	read -r -p "(DNSCrypt.eu is default) [y/n]: "
+
+	case "$REPLY" in
+		[yY])
+			config_interface
+			;;
+		*)
+			systemctl start "$sd_prefix.service"
+			;;
+	esac
+
+	cat >&2 <<-EOF
+
+	You can run this script again to reconfigure, turn off, or uninstall it.
+EOF
+fi
