@@ -165,14 +165,13 @@ redhat_epel_fakeroot() {
 		source /etc/os-release
 
 		case "$VERSION_ID" in
-			6) yum install -y fakeroot
-			   ;;
-			7) rpm --import https://getfedora.org/static/352C64E5.txt
-			   redhat_arch_fakeroot
-			   ;;
-			7.*) rpm --import https://getfedora.org/static/352C64E5.txt
-			   redhat_arch_fakeroot
-			   ;;
+			6*)
+				yum install -y fakeroot
+				;;
+			7*)
+				rpm --import https://getfedora.org/static/352C64E5.txt
+				redhat_arch_fakeroot
+				;;
 		esac
 	fi
 }
