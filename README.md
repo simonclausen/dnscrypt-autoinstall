@@ -21,18 +21,7 @@ su -c ./dnscrypt-autoinstall
 ## Supported providers
 
 Providers are retrieved from the latest published dnscrypt-resolvers.csv (github.com/jedisct1),
-with a fallback to those from the DNSCrypt installation.
-
-Examples providers:
-
-Provider | Location | Note
--------- | -------- | ----
-[DNSCrypt.eu](https://dnscrypt.eu/) | Europe | No logs, DNSSEC
-[OpenDNS](https://www.opendns.com/about/innovations/dnscrypt/) | Anycast | 
-[CloudNS](https://cloudns.com.au/) | Australia | No logs, DNSSEC
-[OpenNIC](https://www.opennicproject.org/) | Japan | No logs
-[OpenNIC](https://www.opennicproject.org/) | Europe | No logs
-[Soltysiak.com](http://dc1.soltysiak.com/) | Europe | No logs, DNSSEC
+with a fallback to those included with the DNSCrypt installation.
 
 ## Troubleshooting
 
