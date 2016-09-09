@@ -12,6 +12,9 @@ This script will automatically and securely set up DNSCrypt as a background serv
 
 The script supports recent Red Hat-based (CentOS, Fedora, Scientific Linux), Debian-based (Debian, Ubuntu, Linux Mint) distributions and OpenSUSE.
 
+| Note | Scripts with sysvinit support were moved to the "legacy" branch (CentOS 6, Debian 7, Ubuntu < 16.04) |
+| --- | --- |
+
 ```
 wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall
 chmod +x dnscrypt-autoinstall
