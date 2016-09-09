@@ -28,12 +28,6 @@ chmod +x dnscrypt-autoinstall-redhat.sh
 ./dnscrypt-autoinstall-redhat.sh
 ```
 
-###Arch Linux:
-
-Install `dnscrypt-autoinstall` from the AUR:
-
-https://aur.archlinux.org/packages/dnscrypt-autoinstall/
-
 ## Supported providers
 
 Provider | Location | Note
