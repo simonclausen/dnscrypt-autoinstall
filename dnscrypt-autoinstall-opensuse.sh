@@ -27,7 +27,7 @@ LSODIUMINST=false
 DNSCRYPTINST=false
 DNSCRYPTCONF=false
 DNSCRYPTURL="https://download.dnscrypt.org/dnscrypt-proxy"
-INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/init-scripts"
+INITURL="https://raw.github.com/simonclausen/dnscrypt-autoinstall/legacy/init-scripts"
 DNSCRYPTVER=$(curl --retry 5 -L $DNSCRYPTURL | awk -F'(.tar|proxy-)' '/proxy-1/ {v=$2}; END {print v}')
 WHICHRESOLVER=dnscrypteu
 
