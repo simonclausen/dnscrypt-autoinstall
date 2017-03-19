@@ -19,7 +19,7 @@ The script supports recent Red Hat-based (CentOS, Fedora, Scientific Linux), Deb
 | --- | --- |
 
 ```
-wget https://raw.github.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall
+wget https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/dnscrypt-autoinstall
 chmod +x dnscrypt-autoinstall
 su -c ./dnscrypt-autoinstall
 ```
