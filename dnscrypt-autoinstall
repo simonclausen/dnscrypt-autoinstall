@@ -105,8 +105,12 @@ build_dnscrypt() {
 	set -e
 	umask 0022
 
-	build_url='https://download.dnscrypt.org/dnscrypt-proxy'
-	build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
+	#build_url='https://download.dnscrypt.org/dnscrypt-proxy'
+	#build_tgz=$(_release_latest dnscrypt-proxy "$build_url")
+	
+	# Using Ubuntu repo as reliable source, hard code version 1.9.4. Signature is not in repo unfortunately, had to rely on other archives for that
+	build_url='https://launchpad.net/ubuntu/+archive/primary/+files'
+	build_tgz='dnscrypt-proxy_1.9.4.orig.tar.gz'
 
 	sd_url=https://raw.githubusercontent.com/simonclausen/dnscrypt-autoinstall/master/systemd
 	sd_path=/etc/systemd/system
@@ -124,7 +128,11 @@ build_dnscrypt() {
 	mkdir -p "$srcdir"
 	cd "$srcdir"
 
-	_get_source "$build_url/$build_tgz"{,.sig}
+	#_get_source "$build_url/$build_tgz"{,.sig}
+	# Just get the .tar.gz file and use the following hard-coded signature for verification (not pretty but it works...)
+	# Signature file from: https://reaged.ru/soft/DNSCrypt-1.9.4/   -- Note: I hardcoded to prevent script from breaking in case this website goes down
+	# We are comparing the Ubuntu repo .tar.gz to a signature sourced somewhere else entirely; if it passes the sig check, we should be pretty confident there was no meddling with any files
+	_get_source "$build_url/$build_tgz" && echo 'H4sIAEMRdloCAwEfAuD9iQIcBAABCAAGBQJYgzvmAAoJEGLyW1krb3baWCQP/ibK363enTXKNsEZA6mXw2o9Xl6SE5L7OGUUKewpOtn5jt0iv00pEAZmznhGgDsOsjtS9fLgybuhq/CUg65D1ffuyh0TIDgmDIxQCY5rVubLtlYLe/piE0VRjDFBmG+lm1VIFpJy6SmE7hW1N48AC3ZinPfj6eK1yxGVtH0SfmHe5UwkkCAaE6wh32juTK1mW0CJYYZZUWsqGxKNuRrtcOqfIi5R01YVN9bbDz1zPfpPP4l0u6FtAxbsMxL4n7laRo6LyghQIUpvpFXoiVSLUQ/OKJZqU8pPKo5eljQg2n+C4AqCnlZ6iCERYcgSH7lS/3zyHERFFn8TYUK7ytOjghh+Siq9nHPHRU1XWxNp2b8xVk+K5Ceu7ztzHiGAROqbUMTNoXbjgQo1TxqtmWOKlyhrfC3T5P39DhdijSgF0bcsixug+gCSrcVx6mCIRVwqibMeu4bBkN8h3uG+qbHOBhVrew4iBBt6doRo4+UXt3cjIES6mChZM9laQ3gK1gNZ3dPX8hwyK/Pi/h7DmDTD2jicIlhBRCzXdTH86pcvybcESLpa5TVzg+xCgFEDwBgEHPkEGwn4YMwe+Rqh7bpLbW7X05oDf5oqyvc2qfrmTXwIuGo+KC2b/EzTpTz3+QntpKA6OTm0bll/BpdQty4vymQRGgXA5t6T+FPpM+mOlYlcsWEzHh8CAAA=' | base64 -d | gzip -d > "$build_tgz".sig
 	_get_source "$sd_url/$sd_prefix"{,-backup}.service "$sd_url/$sd_prefix".conf
 	_verify_sig "$gpgdir" "$build_tgz".sig
 
@@ -188,7 +196,7 @@ redhat_arch_fakeroot() {
 			;;
 		*)
 			cat >&2 <<-EOF
-	
+
 			Error!
 
 			Unsupported architecture. Install fakeroot manually,
@@ -223,7 +231,7 @@ install_depends() {
 			apt-get update
 			apt-get install -y automake fakeroot tar libtool build-essential ca-certificates curl
 			;;
-		fedora)			
+		fedora)
 			dnf update -y
 			dnf group install -y core
 			dnf install -y fakeroot make automake gcc gcc-c++ libtool ca-certificates curl libsodium-devel
@@ -243,13 +251,15 @@ install_depends() {
 
 config_interface() {
 	#global cache_dir sd_prefix sd_path
-	local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-resolvers.csv
+	#local resolver_url=https://download.dnscrypt.org/dnscrypt-proxy/dnscrypt-resolvers.csv
+	# Let's replace this URL with the list provided by Dyne (https://github.com/dyne/dnscrypt-proxy)
+	local resolver_url=https://raw.githubusercontent.com/dyne/dnscrypt-proxy/master/dnscrypt-resolvers.csv
 	local installed=/usr/local/share/dnscrypt-proxy/dnscrypt-resolvers.csv
 	local resolver_list
 
 	if ! curl --retry 2 --retry-delay 1 -fLO "$resolver_url"; then
 		err 'Retrieving resolvers failed. Falling back to installed version.'
-		
+
 		if [[ -r $installed ]]; then
 			resolver_list=$installed
 		else
