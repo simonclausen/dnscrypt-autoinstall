@@ -1,7 +1,9 @@
 dnscrypt-autoinstall
 ====================
 
-[![Join the chat at https://gitter.im/dnscrypt-autoinstall/Lobby](https://badges.gitter.im/dnscrypt-autoinstall/Lobby.svg)](https://gitter.im/dnscrypt-autoinstall/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge)
+> This project has been archived, see last comment in #108.
+
+---
 
 A script for installing and automatically configuring DNSCrypt on Linux-based systems.
 
